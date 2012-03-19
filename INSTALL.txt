@@ -1,0 +1,35 @@
+_ How to install Vodstok on a server _
+
+
+1. Copy the whole content of www/ in a dedicated place on your server filesystem
+2. Chmod the 'chunks' and 'endpoints' directories to make it writeable (770 or 700, at least)
+3. Configure the config.inc.php file and set up the maximum amount of space your Vodstok will provide (define QUOTA_MB, size in MB)
+4. Configure your Vodstok client to use your new Vodstok endpoint
+
+
+_ How to use the Vodstok client _
+
+Vodstok file sharing system is based on storage endpoints, installed on many web servers. You have to register them (or they will if you try to download a file through Vodstok) before being able to upload a file. This can be done by using the -a option:
+
+$ ./vodstok -a http://vodstok.endpoint.com/vodstok-directory/
+
+You can remove an endpoint with the -r option, or list the registered ones with the -l option. Be careful, the endpoint url MUST be terminated with a trailing '/'.
+
+It is strongly recommended to add other endpoints, to publish yours and update your endpoints list:
+
+$ ./vodstok -p http://vodstok.endpoint.com/vodstok-directory/
+$ ./vodstok -u
+
+If you want to upload a file, juste be sure that at least one endpoint is registered and use this syntax:
+
+$ ./vodstok yourfile.ext
+
+As a result, a VDS link will be provided, based on this format: vds://k...kkk@xxx...xxx/#y...y
+You can share this link through IRC, MSN, Skype or via a website. 
+
+To download a file given a VDS URL:
+
+$ ./vodstok vds://k...kkk@xxx...xxx/#y...y
+
+And that's it, if the file is available the Vodstok client will get it and create it in the current directory. You can specify another directory with the -w option. 
+
