@@ -11,6 +11,7 @@
 import os,sys,re,socket
 from optparse import OptionParser
 from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 from base64 import b64encode,b64decode
 from core.client import VodstokStorage
 from core.db import VodstokDB
@@ -101,16 +102,20 @@ class Vodstok:
 		AES encryption method. Automatically add padding if required.
 		Return a base64 encoded string.
 		"""
+		IV = get_random_bytes(self.block_size)
 		data = self.addPadding(data)
-		aes = AES.new(key, AES.MODE_CBC)
-		return b64encode(aes.encrypt(data))
+		aes = AES.new(key, AES.MODE_CBC, IV)
+		return b64encode(IV+aes.encrypt(data))
 
 	def decrypt(self, key, data):
 		"""
 		AES decryption method. Automatically remove padding.
 		"""
-		aes = AES.new(key, AES.MODE_CBC)
-		data = aes.decrypt(b64decode(data))
+		data = b64decode(data)
+		IV = data[:self.block_size]
+		data = data[self.block.size:]
+		aes = AES.new(key, AES.MODE_CBC, IV)
+		data = aes.decrypt(data)
 		return self.removePadding(data)
 
 
