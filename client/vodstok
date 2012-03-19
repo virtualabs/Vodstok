@@ -2,9 +2,9 @@
 
 """
 
-						Voluntary Distributed Storage Kit
-							----------------------------
-								Download/Upload client
+  					      Voluntary Distributed Storage Kit
+						----------------------------
+					           Download/Upload client
 
 """
 
@@ -20,7 +20,7 @@ from random import choice,shuffle
 
 socket.setdefaulttimeout(30.0)
 
-VERSION = '1.1.1'
+VERSION = '1.1.2'
 
 class NoSuitableEndpoint(Exception):
 	"""
@@ -316,8 +316,7 @@ class Vodstok:
 		Download file content based on the summary
 		"""
 		# download chunks randomly
-		#try:
-		if 1:
+		try:
 			print data.split(':')			
 			filename,chunks = data.split(':')
 			chunk_ids = [c.split('#') for c in chunks.split(',')]
@@ -331,9 +330,9 @@ class Vodstok:
 			dlman = DownloadManager(dl_list)
 			content = dlman.download()
 			
-		#except Exception,e:
-		#	print '[!] Unable to download chunks from the remote server.'
-		#	return
+		except Exception,e:
+			print '[!] Unable to download chunks from the remote server.'
+			return
 						
 		# decrypt data and save it
 		output = self.decrypt(key, content)
