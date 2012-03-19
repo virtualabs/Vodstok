@@ -269,12 +269,12 @@ class Vodstok:
 		"""
 		return (re.match('^vds://([^@]+)@([^#]+)#(.*)$', url) is not None)
 	
-	def downloadChunk(self, url, chunk_id):
+	def downloadChunk(self, url, chunk_id, add_endpoint=True):
 		"""
 		Download a chunk from an endpoint (defined by its url)
 		"""
 		res = VodstokStorage('http://'+url).download(chunk_id)
-		if res is not None:
+		if res is not None and auto_add:
 			self.db.addEndpoint('http://'+url)
 		return res
 	
@@ -349,7 +349,7 @@ class Vodstok:
 		try:
 			data = b64encode(os.urandom(16))
 			url,id = self.uploadChunk(data,16,endpoint=VodstokStorage(endpoint))
-			output = self.downloadChunk(url, id)
+			output = self.downloadChunk(url, id, add_endpoint=False)
 			return output==data
 		except:
 			return False		
