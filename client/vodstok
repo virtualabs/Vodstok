@@ -274,7 +274,7 @@ class Vodstok:
 		Download a chunk from an endpoint (defined by its url)
 		"""
 		res = VodstokStorage('http://'+url).download(chunk_id)
-		if res is not None and auto_add:
+		if res is not None and add_endpoint:
 			self.db.addEndpoint('http://'+url)
 		return res
 	
