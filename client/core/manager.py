@@ -156,8 +156,9 @@ class DownloadManager:
 			return None
 
 	def chunkDownloaded(self, task, chunk):
+		print task.pos,len(chunk)
 		self.content[task.pos] = chunk
-		self.db.addEndpoint('http://'+task.url)
+		self.db.addEndpoint(task.url)
 		sys.stdout.write('\r[+] Downloading ... %0.2f%%' % (float(len(self.chunks)-len(self.pending_tasks))*100.0/len(self.chunks)))		
 		sys.stdout.flush()
 
