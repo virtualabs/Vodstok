@@ -11,9 +11,10 @@ class VodstokStorage:
 
 	def __init__(self, url):
 		url_info = urlparse.urlparse(url)
+		self.scheme = url_info.scheme		
 		self.server = url_info.netloc
 		self.uri = url_info.path
-		self.url = self.server+self.uri
+		self.url = '%s://%s%s'%(self.scheme,self.server,self.uri)
 		self.posturl = self.uri
 		self.dlurl = 'http://%s%s?chunk=' % (self.server,self.uri)
 		self.puburl = 'http://%s%s?register=' % (self.server,self.uri)
@@ -22,33 +23,35 @@ class VodstokStorage:
 		
 	def upload(self, chunk):
 		"""
-		Upload of raw chunk of data
+		Upload of raw chunk of datae
 		"""
 		params = {
 			'chunk':chunk,
 		}
-		
-		# Send request
-		p = urllib.urlencode(params)
-		r = httplib.HTTPConnection(self.server)
-		r.putrequest('POST',self.posturl)
-		r.putheader('Content-Type','application/x-www-form-urlencoded')
-		r.putheader('Content-Length',str(len(p)))
-		r.endheaders()
-		r.send(p)
-		
-		# Analyze response		
-		resp = r.getresponse()
-		if resp.status == 200:
-			# check if the returned ID is a MD5 hash
-			id = resp.read()
-			if re.match('[0-9a-fA-F]{32}',id):
-				return id
+		try:
+			# Send request
+			p = urllib.urlencode(params)
+			r = httplib.HTTPConnection(self.server)
+			r.putrequest('POST',self.posturl)
+			r.putheader('Content-Type','application/x-www-form-urlencoded')
+			r.putheader('Content-Length',str(len(p)))
+			r.endheaders()
+			r.send(p)
+			
+			# Analyze response		
+			resp = r.getresponse()
+			if resp.status == 200:
+				# check if the returned ID is a MD5 hash
+				id = resp.read()
+				if re.match('[0-9a-fA-F]{32}',id):
+					return id
+				else:
+					return None
 			else:
 				return None
-		else:
+		except:
 			return None
-
+			
 	def download(self, id):
 		"""
 		Download a chunk of data based on its ID (returned by the upload method above)
@@ -89,8 +92,11 @@ class VodstokStorage:
                                 return resp.read().split(',')
                         return []
                 except urllib2.HTTPError,e:
-                        return []
-	
+                        return []	
+
+	def alias(self, a):
+		return '%s#%s'%(self.url,a)
+
 	def capacity(self):
 		"""
 		Get endpoint statistics (quota, used space and number of chunks present)
