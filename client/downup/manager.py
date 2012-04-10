@@ -8,13 +8,23 @@ from stream import MemoryStream,FileStream
 from scheduler import Scheduler,dummyRepManager
 from tasks import DownloadFileTask,UploadFileTask,UpTask,DownTask,TaskStatus,TaskRef
 
+
 class DownUpManager:
+
+	gDownUpManager = None
+
+	@staticmethod
+	def getInstance():
+		if DownUpManager.gDownUpManager is None:
+			DownUpManager.gDownUpManager = DownUpManager()
+		return DownUpManager.gDownUpManager
 	
 	def __init__(self):
 		self.__scheduler = Scheduler(dummyRepManager())
 		self.__tasks = {}
 		self.__running = False
 		self.__listeners = []
+		self.ensureRun()
 		
 	def ensureRun(self):
 		if self.__running == False:
@@ -88,7 +98,10 @@ class DownUpManager:
 	def suspendTask(self, task):
 		if task in self.__tasks:
 			self.__tasks[task].suspend()
-			del self.__tasks[task]
+			
+	def resumeTask(self, task):
+		if task in self.__tasks:
+			self.__tasks[task].resume()		
 
 	def getTaskStatus(self, task):
 		if task in self.__tasks:
