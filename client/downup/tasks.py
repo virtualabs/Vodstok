@@ -9,6 +9,76 @@ class EndpointIOError(Exception):
 	def __init__(self):
 		Exception.__init__(self)
 
+class Task:
+
+	ST_SUSPENDED = 1
+	ST_RUNNING = 0
+	ST_CANCEL = 2
+	
+	def __init__(self):
+		self.__state = Task.ST_RUNNING
+		self.__processing = []
+		self.__processed = []
+		self.__left = []
+		
+	def getLeft(self):
+		return self.__left
+		
+	def getTopLeft(self):
+		if len(self.__left)>0:
+			return self.__left[0]
+		else:
+			return None
+		
+	def getProcessed(self):
+		return self.__processed
+		
+	def getProcessing(self):
+		return self.__processing		
+
+	def isProcessing(self, task):
+		return (task in self.__processing)
+	
+	def setLeft(self, left):
+		self.__left = left
+		
+	def markAsProcessed(self, task):
+		if task in self.__processing:
+			self.__processing.remove(task)
+			self.__processed.append(task)
+	
+	def markAsProcessing(self, task):
+		if task in self.__left:
+			self.__left.remove(task)
+			self.__processing.append(task)
+			
+	def markAsLeft(self, task):
+		if task in self.__processing:
+			self.__processing.remove(task)
+			self.__left.append(task)
+		
+	def resume(self):
+		if self.__state == Task.ST_SUSPENDED:
+			print '[+] Task resumed'
+			self.__state = Task.ST_RUNNING
+		
+	def suspend(self):
+		if self.__state == Task.ST_RUNNING:
+			print '[+] Task suspended'
+			self.__state = Task.ST_SUSPENDED
+			
+	def cancel(self):
+		self.__state = Task.ST_CANCEL
+		
+	def isCanceled(self):
+		return self.__state == Task.ST_CANCEL
+		
+	def isSuspended(self):
+		return self.__state == Task.ST_SUSPENDED
+		
+	def isRunning(self):
+		return self.__state == Task.ST_RUNNING
+
 class ChunkTask:
 	def __init__(self, parent, index, alias=None, chunk=None):
 		self.__parent = parent
@@ -55,44 +125,30 @@ class UploadChunkTask(ChunkTask):
 			self.alias = None
 			return False
 
-class DownloadFileTask:
+class DownloadFileTask(Task):
 	
 	def __init__(self, manager, aliases, stream):
+		Task.__init__(self)
 		self.__manager = manager
 		self.__stream = stream
-		self.__downloaded_chunks = []
 		self.__ntasks = len(aliases)
-		self.__chunk_downloading = []
-		self.__chunk_tasks = [(i,aliases[i]) for i in range(len(aliases))]
-		self.__start = 0.0
-		self.__remaining = 0.0
 		self.__completed = False
 		self.__file_lock = Lock()
-		self.__suspended = False
+		
+		# init tasks
+		tasks = [DownloadChunkTask(self, i,aliases[i]) for i in range(len(aliases))]
+		shuffle(tasks)
+		self.setLeft(tasks)
 
 	def isCompleted(self):
 		return self.__completed
-
-	def isCompleted(self):
-		return self.__completed
-		
-	def isSuspended(self):
-		return self.__suspended
-		
-	def suspend(self):
-		self.__suspended = True
-		
-	def resume(self):
-		self.__suspended = False
-
-	def cancel(self):
-		self.__completed = True
 
 	def getNextTask(self):
-		if len(self.__chunk_tasks)>0:
-			next_task,task_alias = self.__chunk_tasks.pop(0)
-			chunk_task = DownloadChunkTask(self,next_task,task_alias)
-			self.__chunk_downloading.append(next_task)
+		if len(self.getLeft())>0 and self.isRunning():
+			self.__file_lock.acquire()
+			chunk_task = self.getTopLeft()
+			self.markAsProcessing(chunk_task)
+			self.__file_lock.release()
 			return chunk_task
 		else:
 			return None
@@ -101,29 +157,23 @@ class DownloadFileTask:
 		"""
 		Callback called when upload task is done
 		"""
-		print '[i] Task #%d done: %s' % (task.getIndex(),task.getAlias()) 
-		if task.getIndex() in self.__chunk_downloading:
-			print '[i] Removing task from downloading list'
-			print '[i] Left: %d chunks' % len(self.__chunk_tasks)
-			self.__chunk_downloading.remove(task.getIndex())
-			self.__downloaded_chunks.append(task.getIndex())
-			print '[i] Write chunk to disk'
+		if self.isProcessing(task):
+			self.markAsProcessed(task)
 			self.__file_lock.acquire()
 			self.__stream.writeChunk(task.getChunk(),index=task.getIndex())
 			self.__file_lock.release()
-			if len(self.__chunk_downloading)==0 and len(self.__chunk_tasks)==0:
+			if len(self.getProcessing())==0 and len(self.getLeft())==0:
 				self.onCompleted()
 			else:
 				if self.__manager is not None:
-					self.__manager.onProgress(self, len(self.__downloaded_chunks), self.__ntasks)
+					self.__manager.onProgress(self, len(self.getProcessed()), self.__ntasks)
 			return True
 		else:
 			return False
-		
+
 	def onTaskError(self, task):
 		print '[!] Error during task #%d' % task.getIndex()
-		self.__chunk_downloading.remove(task.getIndex())
-		self.__chunk_tasks.append((task.getIndex(),task.getAlias()))
+		self.markAsLeft(task)
 		return
 		
 	def onCompleted(self):
@@ -132,45 +182,34 @@ class DownloadFileTask:
 			self.__manager.onDownloadFileCompleted(self)
 	
 
-class UploadFileTask:
+class UploadFileTask(Task):
 	
 	def __init__(self, manager, stream):
+		Task.__init__(self)
 		self.__manager = manager
 		self.__stream = stream
-		self.__uploaded_chunks = []
 		self.__ntasks = self.__stream.getNbChunks()
-		self.__chunk_uploading = []
-		self.__chunk_tasks = [i for i in range(self.__stream.getNbChunks())]
-		shuffle(self.__chunk_tasks)
-		self.__start = 0.0
-		self.__remaining = 0.0
 		self.__completed = False
 		self.__file_lock = Lock()
 		self.__errors = 0
-		self.__suspended = False
+
+		# init tasks
+		tasks = [i for i in range(self.__stream.getNbChunks())]
+		shuffle(tasks)
+		self.setLeft(tasks)
+		self.__chunks = []
+		
 
 	def isCompleted(self):
 		return self.__completed
 		
-	def isSuspended(self):
-		return self.__suspended
-		
-	def suspend(self):
-		self.__suspended = True
-		
-	def cancel(self):
-		self.__completed = True
-		
-	def resume(self):
-		self.__suspended = False
-
 	def getNextTask(self):
-		if len(self.__chunk_tasks)>0:
-			next_task = self.__chunk_tasks.pop()
+		if len(self.getLeft())>0 and self.isRunning():
 			self.__file_lock.acquire()
-			chunk_task = UploadChunkTask(self, next_task, self.__stream.readChunk(index=next_task))
+			task = self.getTopLeft()
+			self.markAsProcessing(task)
+			chunk_task = UploadChunkTask(self, task, self.__stream.readChunk(index=task))
 			self.__file_lock.release()
-			self.__chunk_uploading.append(next_task)
 			return chunk_task
 		else:
 			return None
@@ -179,18 +218,15 @@ class UploadFileTask:
 		"""
 		Callback called when upload task is done
 		"""
-		#print '[i] Task #%d done: %s' % (task.getIndex(),task.getAlias()) 
 		self.__errors = 0
-		if task.getIndex() in self.__chunk_uploading:
-			#print '[i] Removing task from uploading list'
-			#print '[i] Left: %d chunks' % len(self.__chunk_tasks)
-			self.__chunk_uploading.remove(task.getIndex())
-			self.__uploaded_chunks.append((task.getIndex(),task))
-			if len(self.__chunk_uploading)==0 and len(self.__chunk_tasks)==0:
+		if self.isProcessing(task.getIndex()):
+			self.markAsProcessed(task.getIndex())
+			self.__chunks.append((task.getIndex(), task))
+			if len(self.getProcessing())==0 and len(self.getLeft())==0:
 				self.onCompleted()
 			else:
 				if self.__manager is not None:
-						self.__manager.onProgress(self, len(self.__uploaded_chunks), self.__ntasks)
+						self.__manager.onProgress(self, len(self.getProcessed()), self.__ntasks)
 			return True
 		else:
 			return False
@@ -201,8 +237,7 @@ class UploadFileTask:
 			if self.__manager is not None:
 				self.__manager.onError(self)
 		else:
-			self.__chunk_uploading.remove(task.getIndex())
-			self.__chunk_tasks.append(task.getIndex())
+			self.markAsLeft(task.getIndex())
 		return
 		
 	def onCompleted(self):
@@ -211,8 +246,9 @@ class UploadFileTask:
 			self.__manager.onUploadFileCompleted(self)
 
 	def getAliases(self):
-		self.__uploaded_chunks.sort()
-		return [a[1].getAlias() for a in self.__uploaded_chunks]
+		self.__chunks.sort()
+		return [a[1].getAlias() for a in self.__chunks]
+
 
 class DownTask:
 	
