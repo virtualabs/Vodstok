@@ -1,14 +1,55 @@
 import os
+import sys
 import re
 import urlparse
 import uuid
 from time import time
 from core.settings import Settings
+from server import ServerIOError,Server
 from stream import MemoryStream,FileStream
+from storage.user import User
 from scheduler import Scheduler,dummyRepManager
 from tasks import DownloadFileTask,UploadFileTask,UpTask,DownTask,TaskStatus,TaskRef
 
 
+class ServersManager:
+	
+	gInst = None
+	
+	@staticmethod
+	def getInstance():
+		if ServersManager.gInst is None:
+			ServersManager.gInst = ServersManager()
+		return ServersManager.gInst	
+	
+	def __init__(self):
+		self.__db = User.getInstance().getServersDB()
+		
+	def checkServers(self):
+		print '[i] Checking servers ...'
+		for server in self.__db.enum():
+			sys.stdout.write('+ checking %s ... '%server.url)
+			sys.stdout.flush()
+			if not server.check():
+				#self.__db.remove(server.url)
+				sys.stdout.write('KO\n')
+			else:
+				sys.stdout.write('OK\n')
+			sys.stdout.flush()
+	
+	def remove(self, url):
+		return self.__db.remove(url)
+		
+	def add(self, url):
+		s= Server(url)
+		if s.check():
+			return self.__db.add(url)
+		return False				
+	
+	def pickRandom(self):
+		return self.__db.pickRandom()
+		
+				
 class DownUpManager:
 
 	gDownUpManager = None
@@ -20,7 +61,7 @@ class DownUpManager:
 		return DownUpManager.gDownUpManager
 	
 	def __init__(self):
-		self.__scheduler = Scheduler(dummyRepManager())
+		self.__scheduler = Scheduler(ServersManager.getInstance())
 		self.__tasks = {}
 		self.__running = False
 		self.__listeners = []
@@ -139,4 +180,3 @@ class DownUpManager:
 		if task.uuid in self.__tasks:
 			self.__tasks[task.uuid].update(done, total)
 			self.notifyTaskProgress(task.uuid,float(done)/total)
-		
