@@ -5,10 +5,6 @@ from stream.filestream import *
 from random import shuffle
 from threading import Lock
 
-class EndpointIOError(Exception):
-	def __init__(self):
-		Exception.__init__(self)
-
 class Task:
 
 	ST_SUSPENDED = 1
@@ -77,7 +73,7 @@ class Task:
 		return self.__state == Task.ST_SUSPENDED
 		
 	def isRunning(self):
-		return self.__state == Task.ST_RUNNING
+		return self.__state == Task.ST_RUNNING	
 
 class ChunkTask:
 	def __init__(self, parent, index, alias=None, chunk=None):
@@ -107,7 +103,7 @@ class DownloadChunkTask(ChunkTask):
 			server,alias = self.alias.split('#')
 			self.chunk = VodstokStorage(server).download(alias)
 			return (self.chunk is not None)
-		except EndpointIOError,e:
+		except ServerIOError,e:
 			self.chunk = None
 			return False
 
@@ -121,7 +117,7 @@ class UploadChunkTask(ChunkTask):
 			if self.alias is not None:
 				self.alias = server.alias(self.alias)
 			return (self.alias is not None)
-		except EndpointIOError,e:
+		except ServerIOError,e:
 			self.alias = None
 			return False
 
@@ -294,7 +290,7 @@ class DownTask:
 	
 	def process(self):
 		self.__state = DownTask.SUMMARY
-		print self.__alias+'#'+self.__chunk_id
+		#print self.__alias+'#'+self.__chunk_id
 		self.__task = DownloadFileTask(self, [self.__alias+'#'+self.__chunk_id], self.__file)
 		if self.__manager is not None:
 			self.__manager.queueTask(self.__task)
