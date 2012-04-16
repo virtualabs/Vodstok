@@ -46,7 +46,7 @@ class Scheduler(Thread):
 		return
 		
 	def acquireRepository(self):
-		return self.__rep_manager.getRandomRepository()
+		return self.__rep_manager.pickRandom()
 		
 	def releaseRepository(self):
 		return
