@@ -1,4 +1,6 @@
 import pickle,os,urlparse
+from random import choice
+from downup.server import Server
 
 class ServersDB:
 	
@@ -27,9 +29,11 @@ class ServersDB:
 		url_info = urlparse.urlparse(url)
 		server = url_info.netloc
 		uri = url_info.path
-		url = 'http://%s%s/' % (server,uri)
-		while '//' in url:
-			url = url.replace('//','/')
+		while '//' in uri:
+			uri = uri.replace('//','/')
+		url = 'http://%s%s' % (server,uri)
+		if url[-1]!='/':
+			url += '/'
 		return url
 
 
@@ -37,15 +41,22 @@ class ServersDB:
 		server = self.normalize(server) 
 		if server in self.servers:
 			self.servers.remove(server)
-			self.sync()	
+			self.sync()
+			return True
+		return False
 	
 	def add(self, server):
-		server = self.normalize(server) 
+		server = self.normalize(server)
 		if server not in self.servers:
 			self.servers.append(server)
 			self.sync()
+			return True
+		return False
 			
 	def enum(self):
 		for server in self.servers:
-			yield server
+			yield Server(server)
+			
+	def pickRandom(self):
+		return Server(choice(self.servers))
  
