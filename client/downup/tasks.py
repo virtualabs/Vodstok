@@ -1,10 +1,9 @@
 import uuid,urlparse,os
 from time import time
-from core.client import VodstokStorage
 from stream.filestream import *
 from random import shuffle
 from threading import Lock
-from downup.server import ServerIOError
+from downup.server import ServerIOError,Server
 
 class Task:
 
@@ -102,7 +101,7 @@ class DownloadChunkTask(ChunkTask):
 	def process(self, server):
 		try:
 			server,alias = self.alias.split('#')
-			self.chunk = VodstokStorage(server).download(alias)
+			self.chunk = Server(server).download(alias)
 			return (self.chunk is not None)
 		except ServerIOError,e:
 			self.chunk = None
