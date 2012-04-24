@@ -30,3 +30,13 @@ def convert_bytes(bytes):
 	else:
 		size = '%.2f B' % bytes
 	return size
+
+def formatSpeed(s):
+	if s>2**30:
+		return '%0.2f Gb/s' % (float(s)/2**30)
+	elif s>2**20:
+		return '%0.2f Mb/s' % (float(s)/2**20)
+	elif s>2**10:
+		return '%0.2f Kb/s' % (float(s)/2**10)
+	else:
+		return '%d b/s' % s
