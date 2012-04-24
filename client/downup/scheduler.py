@@ -1,5 +1,4 @@
 from threading import Thread
-from core.client import VodstokStorage
 from time import sleep
 from core.settings import Settings
 
