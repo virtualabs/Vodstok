@@ -4,6 +4,7 @@ from core.client import VodstokStorage
 from stream.filestream import *
 from random import shuffle
 from threading import Lock
+from downup.server import ServerIOError
 
 class Task:
 
@@ -253,7 +254,7 @@ class DownTask:
 	RECVING=1
 	DONE=2
 	
-	def __init__(self, manager=None, url=''):
+	def __init__(self, manager=None, url='', dest_prefix=''):
 		self.uuid = uuid.uuid1()
 		self.__manager = manager
 		self.__filename = None
@@ -264,6 +265,7 @@ class DownTask:
 		self.__chunk_id = None
 		self.__state = DownTask.INIT
 		self.__task = None
+		self.__dst_prefix = dest_prefix
 		self.__parse()
 		
 	def __parse(self):
@@ -303,7 +305,8 @@ class DownTask:
 				self.__task = DownloadFileTask(self, chunks, self.__file)
 			else:
 				self.__state=DownTask.RECVING
-				self.__file = FileStream(open(filename,'wb'), key=self.__key)
+				self.filename = os.path.join(self.__dst_prefix, filename)
+				self.__file = FileStream(open(self.filename,'wb'), key=self.__key)
 				self.__task = DownloadFileTask(self, chunks.split(','), self.__file)
 			if self.__manager is not None:
 				self.__manager.queueTask(self.__task)
@@ -344,7 +347,7 @@ class UpTask:
 	def process(self):
 		# process task
 		# -> launch a file upload
-		print '[+] Sending chunks ...'
+		#print '[+] Sending chunks ...'
 		self.__state = UpTask.SENDING
 		if self.__manager is not None:
 			self.__manager.queueTask(self.__task)
@@ -362,14 +365,14 @@ class UpTask:
 		if self.__state == UpTask.SENDING:
 			meta = '%s|%s'%(self.__filename,','.join(task.getAliases()))
 			if len(meta)>Settings.chunk_size:
-				print '[+] Sending metadata ...'
+				#print '[+] Sending metadata ...'
 				meta = 'metadata|%s'%(','.join(task.getAliases()))
 				if self.__manager is not None:
 					self.__task = UploadFileTask(self, MemoryStream(meta, key=self.__key))
 					self.__manager.queueTask(self.__task)
 					#self.__manager.uploadFile(self, 'metadata', MemoryStream(meta, key=self.__key))
 			else:
-				print '[+] Sending summary ...'
+				#print '[+] Sending summary ...'
 				self.__state = UpTask.SUMMARY
 				self.__task = UploadFileTask(self, MemoryStream(meta, key=self.__key))
 				if self.__manager is not None:
