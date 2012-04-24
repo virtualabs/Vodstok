@@ -94,7 +94,7 @@ class Server:
 	            r = urllib2.Request(self.epurl)
 	            resp =  urllib2.urlopen(r)
 	            if resp:
-	                    return resp.read().split(',')
+	                    return [Server(url) for url in resp.read().split(',')]
 	            return []
 	    except urllib2.HTTPError,e:
 	            raise ServerIOError()
@@ -130,3 +130,6 @@ class Server:
 			return None
 		except httplib.InvalidURL:
 			return None
+
+	def __str__(self):
+		return self.url
