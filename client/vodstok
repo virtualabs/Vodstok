@@ -12,7 +12,7 @@ import os,sys,re,socket
 from optparse import OptionParser
 from core.helpers import convert_bytes
 from downup.manager import CmdLineManager
-from downup.server import Server
+from downup.server import Server,ServerIOError
 from storage.user import User
 
 socket.setdefaulttimeout(30.0)
@@ -109,7 +109,10 @@ class Vodstok:
 		self.endpoints = None
 		for e in self.db.enum():
 			ep = self.db.pickRandom()
-			ep.publish(e.url)
+			try:
+				ep.publish(e.url)
+			except ServerIOError:
+				pass
 		print '[i] Done.'
 		
 	def getRandomEndpoint(self, filesize):
