@@ -20,6 +20,9 @@ class ServersDB:
 			self.servers = []
 			self.sync()
 
+	def __len__(self):
+		return len(self.servers)
+	
 	def sync(self):
 		f = open(self.db,'wb')
 		pickle.dump(self.servers, f)
