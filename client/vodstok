@@ -10,17 +10,14 @@
 
 import os,sys,re,socket
 from optparse import OptionParser
-from Crypto.Cipher import AES
-from base64 import b64encode,b64decode
-from core.client import VodstokStorage
-from core.db import VodstokDB
-from core.helpers import to_hex,from_hex,convert_bytes
-from core.manager import UploadManager,DownloadManager
-from random import choice,shuffle
+from core.helpers import convert_bytes
+from downup.manager import CmdLineManager
+from downup.server import Server
+from storage.user import User
 
 socket.setdefaulttimeout(30.0)
 
-VERSION = '1.1.2'
+VERSION = '1.2.0'
 
 class NoSuitableEndpoint(Exception):
 	"""
@@ -51,67 +48,8 @@ class Vodstok:
 	"""
 	def __init__(self):
 		# read user's endpoint list
-		self.db = VodstokDB()
-		# chunk size is 16Ko
-		self.chunk_size = 1024*32
-		# block size is 16 bytes (AES)
-		self.block_size = 16
-		self.endpoints = None
+		self.db = User.getInstance().getServersDB()
 
-	def loadEndpoints(self):
-		"""
-		Load endpoints.
-		
-		This method load every declared endpoints and check its availibility. It takes some time to execute, but this is required
-		before doing any upload operation.
-		"""
-		if self.endpoints is None:
-			eps = [VodstokStorage(url) for url in self.db.listEndpoints()]
-			try:
-				self.endpoints = [ (e,e.capacity()[0]) for e in eps]
-			except socket.error:
-				# something went wrong while contacting the endpoint, do not use it
-				pass
-
-	
-	#
-	#	Encryption related stuff
-	#
-
-	
-
-	def addPadding(self, data):
-		"""
-		Add PKCS5 padding to data
-		"""
-		l = self.block_size - (len(data)%self.block_size)
-		for i in range(l):
-			data += chr(l)
-		return data
-		
-	def removePadding(self, data):
-		"""
-		Remove PKCS5 from a data block
-		"""
-		l = ord(data[-1])
-		return data[:-l]
-
-	def encrypt(self, key, data):
-		"""
-		AES encryption method. Automatically add padding if required.
-		Return a base64 encoded string.
-		"""
-		data = self.addPadding(data)
-		aes = AES.new(key, AES.MODE_CBC)
-		return b64encode(aes.encrypt(data))
-
-	def decrypt(self, key, data):
-		"""
-		AES decryption method. Automatically remove padding.
-		"""
-		aes = AES.new(key, AES.MODE_CBC)
-		data = aes.decrypt(b64decode(data))
-		return self.removePadding(data)
 
 
 	#
@@ -123,7 +61,7 @@ class Vodstok:
 		Displays every storage endpoint declared
 		"""
 		i = 0
-		for endpoint in self.db.listEndpoints():
+		for endpoint in self.db.enum():
 			print '-> %s' % endpoint
 			i += 1
 		print '%d endpoint(s) referenced' % i
@@ -132,239 +70,67 @@ class Vodstok:
 		"""
 		Add an endpoint to the endpoints database
 		"""
-		self.db.addEndpoint(endpoint)
+		self.db.add(endpoint)
 		return
 		
 	def removeEndpoint(self, endpoint):
 		"""
 		Remove an endpoint from the endpoints database
 		"""
-		self.db.removeEndpoint(endpoint)
+		self.db.remove(endpoint)
 		return
 
 	def publishEndpoint(self, endpoint):
 		"""
 		Publish a given endpoint on every other endpoints
 		"""
-		self.loadEndpoints()
-		for e,capacity in self.endpoints:
-			if e!=endpoint:
+		for e in self.db.enum():
+			if e.url!=endpoint:
 				sys.stdout.write('- publishing on %s ... ' % e.url)
 				if e.publish(endpoint):
 					sys.stdout.write('ok\n')
 				else:
 					sys.stdout.write('ko\n')
 
+	def testEndpoint(self, url):
+		return Server(url).check()
+
 	def updateEndpoints(self):
 		"""
 		Publish a given endpoint on every other endpoints
 		"""
-		self.loadEndpoints()
-		for e,capacity in self.endpoints:
+		for e in self.db.enum():
 			endpoints = e.listRegisteredEndpoints()
 			for ep in endpoints:
-				if self.testEndpoint(ep):
-					self.addEndpoint(ep)
+				if ep.check():
+					self.db.add(ep.url)
+
 		print '[i] Propagating endpoints ...'
 		self.endpoints = None
-		self.loadEndpoints()
-		for e,capacity in self.endpoints:
-			ep = self.getRandomEndpoint(0)
+		for e in self.db.enum():
+			ep = self.db.pickRandom()
 			ep.publish(e.url)
 		print '[i] Done.'
 		
 	def getRandomEndpoint(self, filesize):
-		"""
-		Randomly select an endpoint able to store at least filesize bytes. The randomness is mandatory to spread all the chunks among
-		all declared endpoints.
-		"""
-		eps = []
-		for e,capacity in self.endpoints:
-			if capacity>filesize:
-				eps.append(e)
-		if len(eps)==0:
-			return None
-		return choice(eps)
-	
-	#
-	#	Upload/download features
-	#	
-	
-	def uploadChunk(self, chunk, filesize, endpoint=None):
-		"""
-		Upload a given chunk on the Vodstok distributed storage
-		"""
-		try:		
-			if endpoint is None:
-				endpoint = self.getRandomEndpoint(filesize)
-				if endpoint is None:
-					raise NoSuitableEndpoint()
-			# return the endpoint url and chunk id
-			return (endpoint.url,endpoint.upload(chunk))
-		except IOError,e:
-			return None
-					
-	def uploadFile(self, filename):
-		"""
-		Upload a file on the Vodstok distributed storage
-		"""
-		self.loadEndpoints()
-		try:
-			"""
-			read file and encrypt content. This is not the best way but the more secure.
-			"""
-			key = os.urandom(16)
-			content = open(filename, 'rb').read()
-			content = self.encrypt(key, content)
-			return self.uploadContent(filename, content, key)			
-		except IOError,e:
-			print e
-			print '[!] Unable to read file %s' % filename
-		
-	def uploadContent(self, filename, content, key):
-		"""
-		Upload a content on the Vodstok distributed storage. Content summary (containing info about where the chunks are) is 
-		automatically uploaded as a new file. 
-		"""
-		try:
-
-			"""
-			Check if at least one endpoint has been declared
-			"""
-			if len(self.endpoints)==0:
-				print '[!] No endpoints registered. Register at least one endpoint before uploading.'
-				return None
-			
-			# compute nb of chunks
-			filename = os.path.basename(filename)
-			fsize = len(content)
-			nchunks = fsize/self.chunk_size
-			if fsize%self.chunk_size>0:
-				nchunks += 1
-
-			# upload chunks
-			chunks = []
-			parts = [content[i:i+self.chunk_size] for i in xrange(0,len(content),self.chunk_size)]
-			upman = UploadManager(self.endpoints, parts,fsize)
-			chunks = upman.upload()
-			
-			# save summary
-			summary = '%s:%s' % (os.path.basename(filename), ','.join(['%s#%s'%(server,id) for server,id in chunks]))
-			enc_chunk = self.encrypt(key, summary)
-			if len(enc_chunk)<=self.chunk_size:
-				url,root = self.uploadChunk(enc_chunk, len(enc_chunk))
-				return 'vds://%s@%s#%s' % (to_hex(key), url, root)
-			else:
-				summary = '%s:%s' % (filename,','.join(['%s#%s'%(server,id) for server,id in chunks]))
-				enc_chunk = self.encrypt(key, summary)
-				return self.uploadContent('metadata', enc_chunk, key)
-
-		except NoSuitableEndpoint,e:
-			print '[!] No suitable endpoint. File is too large to be stored on Vodstok.'
-
+		return self.db.pickRandom()
 	
 	def isVdsUrl(self, url):
 		"""
 		Check wether the provided URL is a Vodstok URL or not
 		"""
-		return (re.match('^vds://([^@]+)@([^#]+)#(.*)$', url) is not None)
-	
-	def downloadChunk(self, url, chunk_id, add_endpoint=True):
-		"""
-		Download a chunk from an endpoint (defined by its url)
-		"""
-		res = VodstokStorage('http://'+url).download(chunk_id)
-		if res is not None and add_endpoint:
-			self.db.addEndpoint('http://'+url)
-		return res
-	
-	def downloadFileFromURL(self, url, dest_dir=''):
-		"""
-		Download a file based on a Vodstok URL.
-		"""
-		r = re.search('^vds://([^@]+)@([^#]+)#(.*)$', url)
-		if r:
-			# extract info from URL
-			key = from_hex(r.group(1))
-			server = r.group(2)
-			id = r.group(3)
-			
-			# retrieve file summary
-			print '[+] Retrieving file summary'
-			data = VodstokStorage('http://'+server).download(id)
-			data = self.decrypt(key, data)
-			filename = data.split(':')[0]
-			while filename=='metadata':
-					filename,data = self.downloadFile(key, data)
-					filename = data.split(':')[0]
-			print '[+] Starting file download'
-			filename,content = self.downloadFile(key, data)
-			try:
-				f = open(os.path.join(dest_dir,filename),'wb')
-				f.write(content)
-				f.close()
-				print '[i] File saved as %s' % os.path.join(dest_dir,filename)
-			except IOError,e:
-				print '[!] Unable to write to %s' % os.path.join(dest_dir,filename)
-			
-			
-		else:
-			print '[!] Bad URL format.'
+		return (re.match('^(http|https)://([^@]+)@([^#]+)#(.*)$', url) is not None)
 
-	def downloadFile(self, key, data, dest_dir=''):
-		"""
-		Download file content based on the summary
-		"""
-		# download chunks randomly
-		try:
-			print data.split(':')			
-			filename,chunks = data.split(':')
-			chunk_ids = [c.split('#') for c in chunks.split(',')]
-
-			# list of chunks to download in a random order				
-			dl_chunks = [None for i in range(len(chunk_ids))]
-			dl_list = [(i,chunk_ids[i]) for i in range(len(chunk_ids))]
-			shuffle(dl_list)				
-			
-			# download content randomly
-			dlman = DownloadManager(dl_list)
-			content = dlman.download()
-			
-		except Exception,e:
-			print '[!] Unable to download chunks from the remote server.'
-			return
-						
-		# decrypt data and save it
-		output = self.decrypt(key, content)
-		return (filename,output)
-
-
-	def testEndpoint(self, endpoint):
-		"""
-		Test endpoint.
-		
-		This method sends a 16-byte long data and check if the endpoint is able to store it and provide it again.
-		This is a functional test.
-		"""
-		try:
-			data = b64encode(os.urandom(16))
-			url,id = self.uploadChunk(data,16,endpoint=VodstokStorage(endpoint))
-			output = self.downloadChunk(url, id, add_endpoint=False)
-			return output==data
-		except:
-			return False		
-			
 	def getGlobalCapacity(self):
 		"""
 		Computes the overall storage capacity (based on every endpoints declared)
 		"""
-		self.loadEndpoints()
 		total_chunks = 0
 		total_used = 0
 		total_quota = 0
 		i = 1
-		for endpoint,capacity in self.endpoints:
-			sys.stdout.write('\r[+] Computing global capacity ...%0.2f%%' % (float(i)*100/len(self.endpoints)))
+		for endpoint in self.db.enum():
+			sys.stdout.write('\r[+] Computing global capacity ...%0.2f%%' % (float(i)*100/len(self.db)))
 			sys.stdout.flush()
 			res = endpoint.capacity()
 			if res:
@@ -413,13 +179,12 @@ if __name__ == '__main__':
 	elif options.showver:
 		print 'Vodstok version %s - virtualabs.fr' % VERSION		
 	elif len(args)>=1 :
+		manager = CmdLineManager()
 		if a.isVdsUrl(args[0]):
-			a.downloadFileFromURL(args[0],options.dest_dir)		
+			print '[i] Starting download ...'
+			manager.download(args[0], options.dest_dir)
 		else:		
-			url = a.uploadFile(args[0])
-			if url:
-				print '[i] File successfully uploaded.\nShare this link/file: %s' % url
-			else:
-				print '[!] Unable to upload file (an error occured)'
+			print '[i] Starting upload ...'
+			manager.upload(args[0])
 	else:
 		Options().print_help()	
