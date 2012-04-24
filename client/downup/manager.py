@@ -4,6 +4,7 @@ import re
 import urlparse
 import uuid
 from time import time
+from core.helpers import formatSpeed
 from core.settings import Settings
 from server import ServerIOError,Server
 from stream import MemoryStream,FileStream
@@ -122,8 +123,8 @@ class DownUpManager:
 		self.__registerTask(t)
 		return t.uuid
 		
-	def download(self, url):
-		t = DownTask(self, url)
+	def download(self, url, prefix=''):
+		t = DownTask(self, url, prefix)
 		self.__registerTask(t)
 		return t.uuid
 		
@@ -180,3 +181,56 @@ class DownUpManager:
 		if task.uuid in self.__tasks:
 			self.__tasks[task.uuid].update(done, total)
 			self.notifyTaskProgress(task.uuid,float(done)/total)
+
+
+class CmdLineManager:
+	def __init__(self):
+		self.m = DownUpManager() 
+		self.m.ensureRun()
+		self.m.registerListener(self)
+		self.task = None
+		self.kind = ''
+		self.start = time()
+		
+	def upload(self, filename):
+		self.task = self.m.upload(filename)
+		self.kind = 'up'
+		self.m.startTask(self.task)
+		
+	def download(self, filename,prefix=''):
+		self.task = self.m.download(filename,prefix)
+		self.kind = 'down'
+		self.m.startTask(self.task)
+		
+	def onTaskDone(self, task):
+		if task==self.task:
+			if self.kind == 'up':
+				m = 'Uploading '
+			else:
+				m = 'Downloading '
+			sys.stdout.write('\r%s: ['%m+'='*40 + '] %s     ' % formatSpeed(self.m.getTask(task).speed))
+			sys.stdout.write('\n')
+			if self.kind == 'up':
+				print 'Url: %s' % self.m.getTask(task).getUrl()
+			else:
+				print 'File downloaded to %s' % self.m.getTask(task).filename
+			self.m.shutdown()
+			
+	def onTaskProgress(self, task, progress):
+		if task==self.task:
+			if self.kind == 'up':
+				m = 'Uploading '
+			else:
+				m = 'Downloading '
+			n = int(progress*40)
+			sys.stdout.write('\r%s: ['%m+'='*n + ' '*(40-n)+'] %s     ' % formatSpeed(self.m.getTask(task).speed))
+			sys.stdout.flush()
+	
+	def onTaskCancel(self,task):
+		return
+		
+	def onTaskError(self, task):
+		if task==self.task:
+			sys.stdout.write('\n')
+			print '[!] Unable to upload'
+			self.m.shutdown()
