@@ -1,236 +1,356 @@
-import os
 import sys
-import re
-import urlparse
-import uuid
 from time import time
 from core.helpers import formatSpeed
-from core.settings import Settings
-from server import ServerIOError,Server
-from stream import MemoryStream,FileStream
+from server import Server
 from storage.user import User
-from scheduler import Scheduler,dummyRepManager
-from tasks import DownloadFileTask,UploadFileTask,UpTask,DownTask,TaskStatus,TaskRef
+from scheduler import Scheduler
+from tasks import UpTask,DownTask,TaskStatus,TaskRef
 
 
 class ServersManager:
-	
-	gInst = None
-	
-	@staticmethod
-	def getInstance():
-		if ServersManager.gInst is None:
-			ServersManager.gInst = ServersManager()
-		return ServersManager.gInst	
-	
-	def __init__(self):
-		self.__db = User.getInstance().getServersDB()
-		
-	def checkServers(self):
-		print '[i] Checking servers ...'
-		for server in self.__db.enum():
-			sys.stdout.write('+ checking %s ... '%server.url)
-			sys.stdout.flush()
-			if not server.check():
-				#self.__db.remove(server.url)
-				sys.stdout.write('KO\n')
-			else:
-				sys.stdout.write('OK\n')
-			sys.stdout.flush()
-	
-	def remove(self, url):
-		return self.__db.remove(url)
-		
-	def add(self, url):
-		s= Server(url)
-		if s.check():
-			return self.__db.add(url)
-		return False				
-	
-	def pickRandom(self):
-		return self.__db.pickRandom()
-		
-				
+
+    """
+    This class manages the user's servers database.
+
+    It only adds servers checking at the moment, but in further versions
+    it will be used as a manager handling regular servers list updates
+    and background checks.
+    """
+    
+    gInst = None
+    
+    @staticmethod
+    def getInstance():
+        if ServersManager.gInst is None:
+            ServersManager.gInst = ServersManager()
+        return ServersManager.gInst
+
+    def __init__(self):
+        self.__db = User.getInstance().getServersDB()
+
+    def checkServers(self):
+        print '[i] Checking servers ...'
+        for server in self.__db.enum():
+            sys.stdout.write('+ checking %s ... '%server.url)
+            sys.stdout.flush()
+            if not server.check():
+                sys.stdout.write('KO\n')
+            else:
+                sys.stdout.write('OK\n')
+            sys.stdout.flush()
+
+    def remove(self, url):
+        return self.__db.remove(url)
+
+    def add(self, url):
+        if Server(url).check():
+            return self.__db.add(url)
+        return False
+
+    def pickRandom(self):
+        return self.__db.pickRandom()
+
+
 class DownUpManager:
 
-	gDownUpManager = None
+    """
+    Download/Upload manager.
 
-	@staticmethod
-	def getInstance():
-		if DownUpManager.gDownUpManager is None:
-			DownUpManager.gDownUpManager = DownUpManager()
-		return DownUpManager.gDownUpManager
-	
-	def __init__(self):
-		self.__scheduler = Scheduler(ServersManager.getInstance())
-		self.__tasks = {}
-		self.__running = False
-		self.__listeners = []
-		self.ensureRun()
-		
-	def ensureRun(self):
-		if self.__running == False:
-			self.__scheduler.start()
-			self.__running = True
+    This manager handles upload and download tasks and allows task management
+    (start,suspend,stop,cancel).
 
-	## Listeners 
+    Notifications are sent by this manager to every registered listeners, making
+    them able to react on events and interact with active tasks (upload or down-
+    load tasks).
 
-	def registerListener(self, listener):
-		if listener not in self.__listeners:
-			self.__listeners.append(listener)
+    Tasks are referenced by UUIDs, instead of using objects. That is, it is very
+    easy to manage tasks without having complex objects.
 
-	def removeListener(self, listener):
-		if listener in self.__listeners:
-			self.__listeners.remove(listener)
+    This class is an interface for every background running tasks.
+    """
 
-	## Events
+    gDownUpManager = None
 
-	def notifyTaskDone(self, task):
-		for listener in self.__listeners:
-			listener.onTaskDone(task)
-			
-	def notifyTaskProgress(self, task, progress):
-		for listener in self.__listeners:
-			listener.onTaskProgress(task, progress)
+    @staticmethod
+    def getInstance():
+        if DownUpManager.gDownUpManager is None:
+            DownUpManager.gDownUpManager = DownUpManager()
+        return DownUpManager.gDownUpManager
 
-	def notifyTaskCancel(self, task):
-		for listener in self.__listeners:
-			listener.onTaskCancel(task)
-			
-	def notifyTaskSuspended(self, task):
-		for listener in self.__listeners:
-			listener.onTaskSuspended(task)
+    def __init__(self):
+        self.__scheduler = Scheduler(ServersManager.getInstance())
+        self.__tasks = {}
+        self.__running = False
+        self.__listeners = []
+        self.__ensureRun()
 
-	def notifyTaskResumed(self, task):
-		for listener in self.__listeners:
-			listener.onTaskResumed(task)
+    def __ensureRun(self):
+        """
+        Make sure the scheduler is running
+        """
+        if self.__running == False:
+            self.__scheduler.start()
+            self.__running = True
 
-	def notifyTaskError(self, task):
-		for listener in self.__listeners:
-			listener.onTaskError(task)
+	## Listeners
 
-	## Task management
+    def registerListener(self, listener):
+        """
+        Register a listener
+        """
+        if listener not in self.__listeners:
+            self.__listeners.append(listener)
 
-	def queueTask(self, task):
-		self.__scheduler.queueTask(task)
-
-	def __registerTask(self, task):
-		if task.uuid not in self.__tasks:
-			self.__tasks[task.uuid] = TaskRef(task)
-
-	def upload(self, filename):
-		t = UpTask(self, filename)
-		self.__registerTask(t)
-		return t.uuid
-		
-	def download(self, url, prefix=''):
-		t = DownTask(self, url, prefix)
-		self.__registerTask(t)
-		return t.uuid
-		
-	def startTask(self, task):
-		if task in self.__tasks:
-			self.__tasks[task].object.process()
-
-	def removeTask(self, task):
-		if task in self.__tasks:
-			self.__tasks[task].cancel()
-			del self.__tasks[task]
-			
-	def suspendTask(self, task):
-		if task in self.__tasks:
-			self.__tasks[task].suspend()
-			
-	def resumeTask(self, task):
-		if task in self.__tasks:
-			self.__tasks[task].resume()		
-
-	def getTaskStatus(self, task):
-		if task in self.__tasks:
-			return self.__tasks[task].status
-
-	def getTask(self, task):
-		if task in self.__tasks:
-			return self.__tasks[task]
-		else:
-			return None
-
-	def cancel(self, task):
-		if task in self.__tasks:
-			self.__tasks[task].cancel()
-		self.notifyTaskCancel(task)
-
-	def shutdown(self):
-		self.__scheduler.cancel()
-		self.__scheduler.join()
-
+    def removeListener(self, listener):
+        """
+        Unregister a listener
+        """
+        if listener in self.__listeners:
+            self.__listeners.remove(listener)
 
 	## Events
-		
-	def onTaskDone(self, task):
-		if task.uuid in self.__tasks:
-			self.__tasks[task.uuid].status=TaskStatus.TASK_DONE
-			self.notifyTaskDone(task.uuid)
-			
-	def onTaskError(self, task):
-		if task.uuid in self.__tasks:
-			self.__tasks[task.uuid].status=TaskStatus.TASK_ERR
-			self.notifyTaskError(task.uuid)
-			
-	def onTaskProgress(self, task, done, total):
-		if task.uuid in self.__tasks:
-			self.__tasks[task.uuid].update(done, total)
-			self.notifyTaskProgress(task.uuid,float(done)/total)
+
+    def notifyTaskDone(self, task):
+        """
+        Notify listeners about a completed task
+        """
+        for listener in self.__listeners:
+            listener.onTaskDone(task)
+
+    def notifyTaskProgress(self, task, progress):
+        """
+        Notify listeners about an active task
+        """
+        for listener in self.__listeners:
+            listener.onTaskProgress(task, progress)
+
+    def notifyTaskCancel(self, task):
+        """
+        Notify listeners about a canceled task
+        """
+        for listener in self.__listeners:
+            listener.onTaskCancel(task)
+
+    def notifyTaskSuspended(self, task):
+        """
+        Notify listeners about a suspended task
+        """
+        for listener in self.__listeners:
+            listener.onTaskSuspended(task)
+
+    def notifyTaskResumed(self, task):
+        """
+        Notify listeners about a resumed task
+        """
+        for listener in self.__listeners:
+            listener.onTaskResumed(task)
+
+    def notifyTaskError(self, task):
+        """
+        Notify listeners about an error that occured during task processing
+        """
+        for listener in self.__listeners:
+            listener.onTaskError(task)
+
+    ## Task management
+
+    def queueTask(self, task):
+        """
+        Queue a given task (forward the task directly to the scheduler)
+        """
+        self.__scheduler.queueTask(task)
+
+    def __registerTask(self, task):
+        """
+        Register a new task
+        """
+        if task.uuid not in self.__tasks:
+            self.__tasks[task.uuid] = TaskRef(task)
+
+    def upload(self, filename):
+        """
+        Upload a file
+        """
+        t = UpTask(self, filename)
+        self.__registerTask(t)
+        return t.uuid
+
+    def download(self, url, prefix=''):
+        """
+        Download a file.
+
+        The prefix parameter can be used to specify a destination directory
+        """
+        t = DownTask(self, url, prefix)
+        self.__registerTask(t)
+        return t.uuid
+
+    def startTask(self, task):
+        """
+        Start a given task
+
+        Task must be registered before start
+        """
+        if task in self.__tasks:
+            self.__tasks[task].object.process()
+
+    def removeTask(self, task):
+        """
+        Remove task.
+
+        Cancel task and unregister it.
+        """
+        if task in self.__tasks:
+            self.__tasks[task].cancel()
+            del self.__tasks[task]
+
+    def suspendTask(self, task):
+        """
+        Suspend task.
+
+        Task must have been registered before.
+        """
+        if task in self.__tasks:
+            self.__tasks[task].suspend()
+
+    def resumeTask(self, task):
+        """
+        Resume task.
+
+        Task must have been registered before.
+        """
+        if task in self.__tasks:
+            self.__tasks[task].resume()
+
+    def getTaskStatus(self, task):
+        """
+        Retrieve task status.
+
+        Return a AbstractTask status code.
+        """
+        if task in self.__tasks:
+            return self.__tasks[task].status
+
+    def getTask(self, task):
+        """
+        Return an internal task object
+        """
+        if task in self.__tasks:
+            return self.__tasks[task]
+        else:
+            return None
+
+    def cancel(self, task):
+        """
+        Cancel task.
+        """
+        if task in self.__tasks:
+            self.__tasks[task].cancel()
+        self.notifyTaskCancel(task)
+
+    def shutdown(self):
+        """
+        Shutdown upload/download manager.
+
+        Cause the scheduler to shutdown.
+        """
+        self.__scheduler.cancel()
+        self.__scheduler.join()
+
+
+    ## Events
+
+    def onTaskDone(self, task):
+        if task.uuid in self.__tasks:
+            self.__tasks[task.uuid].status=TaskStatus.TASK_DONE
+            self.notifyTaskDone(task.uuid)
+
+    def onTaskError(self, task):
+        if task.uuid in self.__tasks:
+            self.__tasks[task.uuid].status=TaskStatus.TASK_ERR
+            self.notifyTaskError(task.uuid)
+
+    def onTaskProgress(self, task, done, total):
+        if task.uuid in self.__tasks:
+            self.__tasks[task.uuid].update(done, total)
+            self.notifyTaskProgress(task.uuid,float(done)/total)
 
 
 class CmdLineManager:
-	def __init__(self):
-		self.m = DownUpManager() 
-		self.m.ensureRun()
-		self.m.registerListener(self)
-		self.task = None
-		self.kind = ''
-		self.start = time()
-		
-	def upload(self, filename):
-		self.task = self.m.upload(filename)
-		self.kind = 'up'
-		self.m.startTask(self.task)
-		
-	def download(self, filename,prefix=''):
-		self.task = self.m.download(filename,prefix)
-		self.kind = 'down'
-		self.m.startTask(self.task)
-		
-	def onTaskDone(self, task):
-		if task==self.task:
-			if self.kind == 'up':
-				m = 'Uploading '
-			else:
-				m = 'Downloading '
-			sys.stdout.write('\r%s: ['%m+'='*40 + '] %s     ' % formatSpeed(self.m.getTask(task).speed))
-			sys.stdout.write('\n')
-			if self.kind == 'up':
-				print 'Url: %s' % self.m.getTask(task).getUrl()
-			else:
-				print 'File downloaded to %s' % self.m.getTask(task).filename
-			self.m.shutdown()
-			
-	def onTaskProgress(self, task, progress):
-		if task==self.task:
-			if self.kind == 'up':
-				m = 'Uploading '
-			else:
-				m = 'Downloading '
-			n = int(progress*40)
-			sys.stdout.write('\r%s: ['%m+'='*n + ' '*(40-n)+'] %s     ' % formatSpeed(self.m.getTask(task).speed))
-			sys.stdout.flush()
-	
-	def onTaskCancel(self,task):
-		return
-		
-	def onTaskError(self, task):
-		if task==self.task:
-			sys.stdout.write('\n')
-			print '[!] Unable to upload'
-			self.m.shutdown()
+
+    """
+    Command line dummy manager.
+
+    This manager can handle a single upload/download.
+    It displays progress information such as global progress and bitrate.
+    """
+
+    def __init__(self):
+        self.m = DownUpManager()
+        self.m.registerListener(self)
+        self.task = None
+        self.kind = ''
+        self.start = time()
+
+    def upload(self, filename):
+        """
+        Upload a file
+        """
+        self.task = self.m.upload(filename)
+        self.kind = 'up'
+        self.m.startTask(self.task)
+
+    def download(self, filename,prefix=''):
+        """
+        Download a file
+        """
+        self.task = self.m.download(filename,prefix)
+        self.kind = 'down'
+        self.m.startTask(self.task)
+
+    def onTaskDone(self, task):
+        """
+        Task completed callback
+        """
+        if task==self.task:
+            if self.kind == 'up':
+                m = 'Uploading '
+            else:
+                m = 'Downloading '
+            sys.stdout.write('\r%s: ['%m+'='*40 + '] %s     ' % formatSpeed(self.m.getTask(task).speed))
+            sys.stdout.write('\n')
+            if self.kind == 'up':
+                print 'Url: %s' % self.m.getTask(task).getUrl()
+            else:
+                print 'File downloaded to %s' % self.m.getTask(task).filename
+            self.m.shutdown()
+
+    def onTaskProgress(self, task, progress):
+        """
+        Task progress callback
+        """
+        if task==self.task:
+            if self.kind == 'up':
+                m = 'Uploading '
+            else:
+                m = 'Downloading '
+            n = int(progress*40)
+            sys.stdout.write('\r%s: ['%m+'='*n + ' '*(40-n)+'] %s     ' % formatSpeed(self.m.getTask(task).speed))
+            sys.stdout.flush()
+
+    def onTaskCancel(self,task):
+        """
+        Task canceled callback (implemented but never called since we do not allow task cancelation)
+        """
+        return
+
+    def onTaskError(self, task):
+        """
+        Task error callback.
+
+        Stop everything if an error occured.
+        """
+        if task==self.task:
+            sys.stdout.write('\n')
+            print '[!] Unable to upload'
+            self.m.shutdown()
