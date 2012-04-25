@@ -16,10 +16,10 @@ class Cache:
 			self.files = []
 			self.sync()
 
-	def sync(self):
-		f = open(self.db,'wb')
-		pickle.dump(self.files, f)
-		f.close()
+    def sync(self):
+        f = open(self.db,'wb')
+        pickle.dump(self.files, f)
+        f.close()
 
 	def add(self, f):
 		self.files.append(f)
