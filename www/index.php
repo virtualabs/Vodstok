@@ -2,7 +2,19 @@
 
 require_once('utils.php');
 
-if (isset($_GET['stats']))
+/* Check if query string match an ID */
+if (preg_match('/^[a-f0-9]{32}:[a-f0-9]{32}$/i',$_SERVER['QUERY_STRING']))
+{
+    header('Content-Type: application/x-vodstok');
+    $url = 'http';
+    if ($_SERVER['HTTPS']=='on')
+        $url .= 's';
+    $url .= '//';
+    $url .= $_SERVER['SERVER_NAME'].':'.$_SERVER['SERVER_PORT'];
+    $url .= $_SERVER['REQUEST_URI'];
+    die($url);
+}
+else if (isset($_GET['stats']))
 	dispStats();
 else if (isset($_GET['chunk']))
 	dlChunk($_GET['chunk']);
@@ -17,7 +29,7 @@ else
 </head>
 <body>
 <pre>
-		VODSTOK version 1.1
+		VODSTOK version 1.2
 	(Voluntary Distributed Storage Kit)
 
 
