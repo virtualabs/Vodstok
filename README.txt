@@ -1,4 +1,4 @@
-		VODSTOK version 1.1
+		VODSTOK version 1.2
 	(Voluntary Distributed Storage Kit)
 
 
