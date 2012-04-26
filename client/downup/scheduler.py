@@ -82,9 +82,9 @@ class Scheduler(Thread):
         file_task = chunk_task.getParentFileTask()
         file_task.onTaskDone(chunk_task)					
 
-	def onWorkerError(self, chunk_task):
-		file_task = chunk_task.getParentFileTask()
-		file_task.onTaskError(chunk_task)
+    def onWorkerError(self, chunk_task):
+        file_task = chunk_task.getParentFileTask()
+        file_task.onTaskError(chunk_task)
 
     def run(self):
         # start workers
