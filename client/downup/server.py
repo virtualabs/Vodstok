@@ -100,7 +100,7 @@ class Server:
             raise ServerIOError()
 	
     def alias(self, a):
-        return '%s#%s'%(self.url,a)
+        return '%s?%s'%(self.url,a)
 
     def check(self):
         try:
