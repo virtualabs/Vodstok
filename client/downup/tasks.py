@@ -211,7 +211,8 @@ class DownloadChunkTask(AbstractChunkTask):
         Process task with a given Vodstok server
         """
         try:
-            server,alias = self.alias.split('#')
+            #print self.alias
+            server,alias = self.alias.split('?')
             self.chunk = Server(server).download(alias)
             return (self.chunk is not None)
         except ServerIOError:
@@ -394,10 +395,11 @@ class DownTask:
     def __parse(self):
         r = urlparse.urlparse(self.__url)
         self.__scheme = r.scheme
-        self.__key,self.__server = r.netloc.split('@')
-        self.__key = self.__key.decode('hex')
+        self.__server = r.netloc
+        #self.__key = self.__key.decode('hex')
         self.__path = r.path
-        self.__chunk_id = r.fragment
+        self.__key,self.__chunk_id = r.query.split(':')
+        self.__key = self.__key.decode('hex')
         self.__file = MemoryStream('',key=self.__key)
         self.__alias = '%s://%s%s' % (self.__scheme,self.__server,self.__path)
 
@@ -416,7 +418,7 @@ class DownTask:
     def process(self):
         self.__state = DownTask.SUMMARY
         #print self.__alias+'#'+self.__chunk_id
-        self.__task = DownloadFileTask(self, [self.__alias+'#'+self.__chunk_id], self.__file)
+        self.__task = DownloadFileTask(self, [self.__alias+'?'+self.__chunk_id], self.__file)
         if self.__manager is not None:
             self.__manager.queueTask(self.__task)
 		
@@ -488,14 +490,11 @@ class UpTask:
         if self.__state == UpTask.SENDING:
             meta = '%s|%s'%(self.__filename,','.join(task.getAliases()))
             if len(meta)>Settings.chunk_size:
-                #print '[+] Sending metadata ...'
                 meta = 'metadata|%s'%(','.join(task.getAliases()))
                 if self.__manager is not None:
                     self.__task = UploadFileTask(self, MemoryStream(meta, key=self.__key))
                     self.__manager.queueTask(self.__task)
-                    #self.__manager.uploadFile(self, 'metadata', MemoryStream(meta, key=self.__key))
             else:
-                #print '[+] Sending summary ...'
                 self.__state = UpTask.SUMMARY
                 self.__task = UploadFileTask(self, MemoryStream(meta, key=self.__key))
                 if self.__manager is not None:
@@ -511,7 +510,7 @@ class UpTask:
             # split the alias
             p = urlparse.urlparse(self.__alias)
             k = self.__key.encode('hex')
-            return '%s://%s@%s%s#%s' % (p.scheme,k,p.netloc,p.path,p.fragment)
+            return '%s://%s%s?%s:%s' % (p.scheme,p.netloc,p.path,k,p.query)
         else:
             return None
 		
