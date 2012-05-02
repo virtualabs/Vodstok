@@ -1,5 +1,6 @@
 import re
 import os
+import socket
 import urllib,httplib,urllib2
 import urlparse
 from base64 import b64encode
@@ -69,6 +70,14 @@ class Server:
             else:
                 raise ServerIOError()
         except urllib2.URLError:
+            raise ServerIOError()
+        except httplib.IncompleteRead:
+            raise ServerIOError()
+        except httplib.BadStatusLine:
+            raise ServerIOError()
+        except socket.timeout:
+            raise ServerIOError()
+        except socket.error:
             raise ServerIOError()
 	
     def publish(self, endpoint_url):
