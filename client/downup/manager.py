@@ -110,6 +110,20 @@ class DownUpManager:
 
 	## Events
 
+    def notifyTaskCreated(self, task):
+        """
+        Notify listeners about a new task
+        """
+        for listener in self.__listeners:
+            listener.onTaskCreated(task)
+
+    def notifyTaskStarted(self, task):
+        """
+        Notify listeners about a started task
+        """
+        for listener in self.__listeners:
+            listener.onTaskStarted(task)
+
     def notifyTaskDone(self, task):
         """
         Notify listeners about a completed task
@@ -166,6 +180,7 @@ class DownUpManager:
         """
         if task.uuid not in self.__tasks:
             self.__tasks[task.uuid] = TaskRef(task)
+        self.notifyTaskCreated(task.uuid)
 
     def upload(self, filename):
         """
@@ -193,6 +208,7 @@ class DownUpManager:
         """
         if task in self.__tasks:
             self.__tasks[task].object.process()
+        self.notifyTaskStarted(task)
 
     def removeTask(self, task):
         """
@@ -354,3 +370,9 @@ class CmdLineManager:
             sys.stdout.write('\n')
             print '[!] Unable to upload'
             self.m.shutdown()
+            
+    def onTaskCreated(self, task):
+        return
+        
+    def onTaskStarted(self, task):
+        return
