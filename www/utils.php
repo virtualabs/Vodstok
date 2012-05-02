@@ -100,17 +100,30 @@ function createChunk($data)
 
 function dispStats()
 {
-	$used = QUOTA - getFreeSpace();
 	$quota = QUOTA;
-	
+	$usage = array();
 	$dir = opendir(CHUNK_DIR);
-        $chunks = 0;
-        while (false !== ($entry = readdir($dir))) {
-                if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
-			$chunks++;
+    $chunks = 0;
+    $min=time();
+    
+    while (false !== ($entry = readdir($dir))) {
+        if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+        {
+            $entry_creation_date = @filemtime(CHUNK_DIR.'/'.$entry);
+            if ($entry_creation_date<$min)
+                $min = $entry_creation_date;
+            $chunks++;
         }
-	
-	die('quota:'.$quota.',used:'.$used.',chunks:'.$chunks);
+    }
+    if ((time()-$min)>0)
+        $usage_med = floor(($chunks*60)/(time()-$min));
+    else
+        $usage_med = 0;
+
+	$used = $chunks*32768;
+	if ($used>$quota)
+	   $used = $quota;
+	die('quota:'.$quota.',used:'.$used.',chunks:'.$chunks.',usage:'.$usage_med);
 }
 
 /** Endpoints related stuff **/
