@@ -182,13 +182,12 @@ function deleteOlderEndpoint() {
 }
 
 
-function registerEndpoint($ip,$endpoint)
+function registerEndpoint($ip,$url)
 {
 	/* Check last endpoint registration for this IP address */
-	if (!shouldRegister($ip,$endpoint))
+	if (!shouldRegister($ip,$url))
 		error('ERR_CANNOT_REGISTER');	
 
-	/* Check if endpoint is already registered */
 	/* Create endpoint file */
 	$f = fopen(ENDPOINT_DIR.'/'.$ip.'-'.md5($url),'wb');
 	fwrite($f, $url);
@@ -201,9 +200,6 @@ function registerEndpoint($ip,$endpoint)
 function listRandomEndpoints()
 {
 	$dir = opendir(ENDPOINT_DIR);
-	$older = '';
-	$older_ts = time();		
-    $used = 0;
     $endpoints = array();
     while (false !== ($entry = readdir($dir))) {
             if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
