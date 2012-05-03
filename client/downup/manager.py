@@ -312,16 +312,16 @@ class CmdLineManager:
         """
         Upload a file
         """
-        self.task = self.m.upload(filename)
         self.kind = 'up'
+        self.task = self.m.upload(filename)
         self.m.startTask(self.task)
 
     def download(self, filename,prefix=''):
         """
         Download a file
         """
-        self.task = self.m.download(filename,prefix)
         self.kind = 'down'
+        self.task = self.m.download(filename,prefix)
         self.m.startTask(self.task)
 
     def onTaskDone(self, task):
@@ -372,6 +372,11 @@ class CmdLineManager:
             self.m.shutdown()
             
     def onTaskCreated(self, task):
+        if self.kind == 'up':
+            m = 'Uploading '
+        else:
+            m = 'Downloading '
+        sys.stdout.write('\r%s: ['%m+' '*40 + '] %s     ' % formatSpeed(self.m.getTask(task).speed))
         return
         
     def onTaskStarted(self, task):
