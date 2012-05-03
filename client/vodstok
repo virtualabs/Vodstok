@@ -184,10 +184,10 @@ if __name__ == '__main__':
 	elif len(args)>=1 :
 		manager = CmdLineManager()
 		if a.isVdsUrl(args[0]):
-			print '[i] Starting download ...'
+			#print '[i] Starting download ...'
 			manager.download(args[0], options.dest_dir)
 		else:		
-			print '[i] Starting upload ...'
+			#print '[i] Starting upload ...'
 			manager.upload(args[0])
 	else:
 		Options().print_help()	
