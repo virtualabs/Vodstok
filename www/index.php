@@ -33,7 +33,7 @@ else
 </head>
 <body>
 <pre>
-		VODSTOK version 1.2.2
+		VODSTOK version <?php echo(VERSION); ?>  
 	(Voluntary Distributed Storage Kit)
 
 
