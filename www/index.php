@@ -3,7 +3,7 @@
 require_once('utils.php');
 
 /* Check if query string match an ID */
-if (preg_match('/^[a-f0-9]{32}:[a-f0-9]{32}$/i',$_SERVER['QUERY_STRING']))
+if (preg_match('/^[a-f0-9]{32}-[a-f0-9]{32}$/i',$_SERVER['QUERY_STRING']))
 {
     header('Content-Type: application/x-vodstok');
     $url = 'http';
