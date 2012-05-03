@@ -20,6 +20,10 @@ else if (isset($_GET['chunk']))
 	dlChunk($_GET['chunk']);
 else if (isset($_POST['chunk']))
 	createChunk($_POST['chunk']);
+else if (isset($_GET['endpoints']))
+    listRandomEndpoints();    
+else if (isset($_GET['register']))
+    registerEndpoint($_SERVER['REMOTE_ADDR'],$_GET['register']);
 else
 {
 ?>
@@ -29,7 +33,7 @@ else
 </head>
 <body>
 <pre>
-		VODSTOK version 1.2
+		VODSTOK version 1.2.2
 	(Voluntary Distributed Storage Kit)
 
 
@@ -93,7 +97,7 @@ Many operations can be performed with the provided client:
 - download of a file thanks to a specific URL
 </pre>
 <br/><br/>
-<b><a href="vodstok.tgz">Download Vodstok !</a></b>
+<b><a href="https://github.com/virtualabs/Vodstok/zipball/v1.2.0">Download Vodstok !</a></b>
 </body>
 </html>
 

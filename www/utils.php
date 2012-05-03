@@ -198,4 +198,22 @@ function registerEndpoint($ip,$endpoint)
 	@chmod(ENDPOINT_DIR.'/'.$ip.'-'.md5($url), 0777);
 }
 
+function listRandomEndpoints()
+{
+	$dir = opendir(ENDPOINT_DIR);
+	$older = '';
+	$older_ts = time();		
+    $used = 0;
+    $endpoints = array();
+    while (false !== ($entry = readdir($dir))) {
+            if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                array_push($endpoints, file_get_contents(ENDPOINT_DIR.'/'.$entry));
+    }
+	closedir($dir);
+    
+    /* shuffle and keep only the 5 first entries */
+    shuffle($endpoints);
+    die(implode(',',array_slice($endpoints,0,5)));
+}
+
 ?>
