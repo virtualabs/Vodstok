@@ -4,11 +4,7 @@ import socket
 import urllib,httplib,urllib2
 import urlparse
 from base64 import b64encode
-
-
-class ServerIOError(Exception):
-    def __init__(self):
-        Exception.__init__(self)
+from core.exception import ServerIOError
 
 class Server:	
     """

@@ -1,11 +1,11 @@
 import sys
 from time import time
 from core.helpers import formatSpeed
+from core.exception import IncorrectParameterError,IncorrectFormatError
 from server import Server
 from storage.user import User
 from scheduler import Scheduler
 from tasks import UpTask,DownTask,TaskStatus,TaskRef
-
 
 class ServersManager:
 
@@ -199,7 +199,7 @@ class DownUpManager:
         t = DownTask(self, url, prefix)
         self.__registerTask(t)
         return t.uuid
-
+            
     def startTask(self, task):
         """
         Start a given task
@@ -312,18 +312,28 @@ class CmdLineManager:
         """
         Upload a file
         """
-        self.kind = 'up'
-        self.task = self.m.upload(filename)
-        self.m.startTask(self.task)
+        try:
+            self.kind = 'up'
+            self.task = self.m.upload(filename)
+            self.m.startTask(self.task)
+        except IncorrectParameterError:
+            print '[!] Error: bad file name'
+            self.m.shutdown()
 
     def download(self, filename,prefix=''):
         """
         Download a file
+        
+        @throws IncorrectParameterError
         """
-        self.kind = 'down'
-        self.task = self.m.download(filename,prefix)
-        self.m.startTask(self.task)
-
+        try:
+            self.kind = 'down'
+            self.task = self.m.download(filename,prefix)
+            self.m.startTask(self.task)
+        except IncorrectFormatError:
+            print '[!] Error: bad URL format'
+            self.m.shutdown()
+            
     def onTaskDone(self, task):
         """
         Task completed callback

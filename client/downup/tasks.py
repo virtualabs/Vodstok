@@ -32,6 +32,8 @@ from random import shuffle
 from threading import Lock
 from downup.server import ServerIOError,Server
 from core.settings import Settings
+from core.exception import IncorrectParameterError,IncorrectFormatError
+
 
 class AbstractTask:
 
@@ -295,7 +297,7 @@ class DownloadFileTask(AbstractTask):
             return False
 
     def onTaskError(self, task):
-        print '[!] Error during task #%d' % task.getIndex()
+        #print '[!] Error during task #%d' % task.getIndex()
         self.markAsLeft(task)
         return
 		
@@ -398,10 +400,13 @@ class DownTask:
         self.__server = r.netloc
         #self.__key = self.__key.decode('hex')
         self.__path = r.path
-        self.__key,self.__chunk_id = r.query.split('-')
-        self.__key = self.__key.decode('hex')
-        self.__file = MemoryStream('',key=self.__key)
-        self.__alias = '%s://%s%s' % (self.__scheme,self.__server,self.__path)
+        try:
+            self.__key,self.__chunk_id = r.query.split('-')
+            self.__key = self.__key.decode('hex')
+            self.__file = MemoryStream('',key=self.__key)
+            self.__alias = '%s://%s%s' % (self.__scheme,self.__server,self.__path)
+        except ValueError:
+            raise IncorrectFormatError
 
     def cancel(self):
         self.__task.cancel()
@@ -457,15 +462,18 @@ class UpTask:
     DONE=2	
 	
     def __init__(self, manager=None, filename='unk.bin'):
-        self.uuid = uuid.uuid1()
-        self.__manager = manager
-        self.__filename = os.path.basename(filename)
-        self.__file = FileStream(open(filename,'rb'))
-        self.__key = self.__file.getKey()
-        self.__state = UpTask.INIT
-        self.__task = UploadFileTask(self, self.__file)
-        self.__alias = None
-
+        try:
+            self.uuid = uuid.uuid1()
+            self.__manager = manager
+            self.__filename = os.path.basename(filename)
+            self.__file = FileStream(open(filename,'rb'))
+            self.__key = self.__file.getKey()
+            self.__state = UpTask.INIT
+            self.__task = UploadFileTask(self, self.__file)
+            self.__alias = None
+        except IOError:
+            raise IncorrectParameterError
+            
     def setManager(self, manager=None):
         self.__manager = manager
 
