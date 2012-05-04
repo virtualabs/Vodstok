@@ -134,28 +134,31 @@ function shouldRegister($ip, $endpoint) {
 	$older = '';
 	$limit = time()-3600;		
     $used = 0;
-    $exists = false;
     $hash = md5($endpoint);
     while (false !== ($entry = readdir($dir))) {
             if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
             {
-            	$meta = @split($entry,'-');
+            	$meta = @split('-',$entry);
             	$ip_ = $meta[0];
             	$ep_ = $meta[1];
             	if ($ip_===$ip)
             	{
 					$entry_ts = @filemtime(ENDPOINT_DIR.'/'.$entry);
 					if ($entry_ts >= $limit)
+                    {
+                        closedir($dir);
 						return false;
+                    }
 				}
 				if ($ep_==$hash)
-					$exists = true;
+                {
+                    closedir($dir);
+                    return false;
+                }
             }
     }
 	closedir($dir);
-
-	
-	return (!$exists);
+	return true;
 }
 
 
