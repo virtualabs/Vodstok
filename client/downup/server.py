@@ -87,7 +87,7 @@ class Server:
                 return (resp.getcode() == 200)
             return False
         except urllib2.HTTPError,e:
-            if e.getcode == 404:
+            if e.getcode() == 404:
                 return False
             raise ServerIOError()
 	
