@@ -37,7 +37,6 @@ class User:
         self.__homedir = os.getenv('USERPROFILE') or os.getenv('HOME')
         self.__projdir = os.path.join(self.__homedir,User.PROJECT_DIR)
         self.__servers = None
-        self.__cache = None
         self.load()
 
     def getProjectDir(self):
