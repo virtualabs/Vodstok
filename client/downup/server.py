@@ -125,9 +125,9 @@ class Server:
             resp = urllib2.urlopen(r)
             if resp:
                 content = resp.read()
-                r = re.search('quota:([0-9]+),used:([0-9]+),chunks:([0-9]+)', content)
+                r = re.search('quota:([0-9]+),used:([0-9]+),chunks:([0-9]+),usage:([0-9]+)', content)
                 if r:
-                    return (int(r.group(1)),int(r.group(2)),int(r.group(3)))
+                    return (int(r.group(1)),int(r.group(2)),int(r.group(3)),int(r.group(4)))
                 else:
                     return None
             else:
