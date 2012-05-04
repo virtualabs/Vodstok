@@ -138,7 +138,7 @@ function shouldRegister($ip, $endpoint) {
     while (false !== ($entry = readdir($dir))) {
             if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
             {
-            	$meta = @split('-',$entry);
+            	$meta = @explode('-',$entry);
             	$ip_ = $meta[0];
             	$ep_ = $meta[1];
             	if ($ip_===$ip)
