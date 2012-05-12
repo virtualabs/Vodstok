@@ -14,6 +14,8 @@ if (preg_match('/^[a-f0-9]{32}-[a-f0-9]{32}$/i',$_SERVER['QUERY_STRING']))
     $url .= $_SERVER['REQUEST_URI'];
     die($url);
 }
+else if (isset($_GET['version']))
+    die(VERSION);
 else if (isset($_GET['stats']))
 	dispStats();
 else if (isset($_GET['chunk']))

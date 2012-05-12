@@ -22,6 +22,7 @@ class Server:
         self.puburl = '%s://%s%s?register=' % (self.scheme,self.server,self.uri)
         self.statsurl = '%s://%s%s?stats' % (self.scheme,self.server,self.uri)
         self.epurl = '%s://%s%s?endpoints' % (self.scheme,self.server,self.uri)
+        self.versionurl = '%s://%s%s?version' % (self.scheme,self.server,self.uri)
 		
     def upload(self, chunk):
         """
@@ -139,3 +140,20 @@ class Server:
 
     def __str__(self):
         return self.url
+        
+    def version(self):
+        """
+        Retrieve server version
+        """
+        try:
+            r = urllib2.Request(self.versionurl)
+            resp = urllib2.urlopen(r)
+            if resp:
+                return resp.read()
+            else:
+                return None
+        except urllib2.HTTPError:
+            return None
+        except httplib.InvalidURL:
+            return None
+            
