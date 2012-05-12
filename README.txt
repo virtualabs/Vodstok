@@ -61,7 +61,7 @@ scripts are very lite and would not be modified later, but our
 client will be updated regularly.
 
 Many operations can be performed with the provided client:
-- endpoint management (registration, removal, listing)
+- endpoint management (registration, removal, listing, publishing)
 - global capacity assessment
 - upload of a file
 - download of a file thanks to a specific URL

@@ -9,27 +9,27 @@ _ How to install Vodstok on a server _
 
 _ How to use the Vodstok client _
 
-Vodstok file sharing system is based on storage endpoints, installed on many web servers. You have to register them (or they will if you try to download a file through Vodstok) before being able to upload a file. This can be done by using the -a option:
+Vodstok file sharing system is based on storage servers, installed on many web servers. You have to register them (or they will if you try to download a file through Vodstok) before being able to upload a file. This can be done by using the -a option:
 
-$ ./vodstok -a http://vodstok.endpoint.com/vodstok-directory/
+$ ./vodstok -a http://vodstok.server.com/vodstok-directory/
 
-You can remove an endpoint with the -r option, or list the registered ones with the -l option. Be careful, the endpoint url MUST be terminated with a trailing '/'.
+You can remove an server with the -r option, or list the registered ones with the -l option. Be careful, the server url MUST be terminated with a trailing '/'.
 
-It is strongly recommended to add other endpoints, to publish yours and update your endpoints list:
+It is strongly recommended to add other servers, to publish yours and update your servers list:
 
-$ ./vodstok -p http://vodstok.endpoint.com/vodstok-directory/
+$ ./vodstok -p http://vodstok.server.com/vodstok-directory/
 $ ./vodstok -u
 
-If you want to upload a file, juste be sure that at least one endpoint is registered and use this syntax:
+If you want to upload a file, juste be sure that at least one server is registered and use this syntax:
 
-$ ./vodstok yourfile.ext
+$ ./vodstok [filename]
 
-As a result, a VDS link will be provided, based on this format: vds://k...kkk@xxx...xxx/#y...y
+As a result, a link will be provided.
 You can share this link through IRC, MSN, Skype or via a website. 
 
-To download a file given a VDS URL:
+To download a file given a link:
 
-$ ./vodstok vds://k...kkk@xxx...xxx/#y...y
+$ ./vodstok [link]
 
 And that's it, if the file is available the Vodstok client will get it and create it in the current directory. You can specify another directory with the -w option. 
 
