@@ -17,7 +17,7 @@ from storage.user import User
 
 socket.setdefaulttimeout(30.0)
 
-VERSION = '1.2.0'
+VERSION = '1.2.3'
 
 
 class Options(OptionParser):
