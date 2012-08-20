@@ -18,6 +18,8 @@ function getFreeSpace()
 			$used += @filesize(CHUNK_DIR.'/'.$entry);
 	}
 	$left = QUOTA - $used;
+    if ($left < 0)
+        $left = 0;
 	closedir($dir);
 	return $left;
 }
@@ -28,7 +30,7 @@ function deleteOlderChunk() {
 	$older_ts = time();		
         $used = 0;
         while (false !== ($entry = readdir($dir))) {
-                if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                if (($entry!='.') && ($entry!='..') && ($entry!='.htaccess') && !is_dir($entry))
                 {
 			$entry_ts = @filemtime(CHUNK_DIR.'/'.$entry);
 			if ($entry_ts < $older_ts)
@@ -81,7 +83,7 @@ function createChunk($data)
 		error('ERR_TOO_LARGE');	
 
 	/* Check if chunk exists */
-	$id = md5($data.$_SERVER['REMOTE_ADDR'].time());
+	$id = md5($data.$_SERVER['REMOTE_ADDR'].time().rand());
 	if (!file_exists(CHUNK_DIR.'/'.$id))
 	{
 		/* Make enough room for this chunk */
