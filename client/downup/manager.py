@@ -29,9 +29,16 @@ class ServersManager:
         return ServersManager.gInst
 
     def __init__(self):
-        self.__db = User.getInstance().getServersDB()
+        self.__db = User.get_instance().get_servers_db()
 
     def check_servers(self):
+        """
+        Check servers based on user's servers list.
+        
+        The check is performed by sending a chunk to the target server
+        and then retrieving it. If everything is OK, then the server is
+        considered as OK.
+        """
         print '[i] Checking servers ...'
         for server in self.__db.enum():
             sys.stdout.write('+ checking %s ... '%server.url)
@@ -43,15 +50,26 @@ class ServersManager:
             sys.stdout.flush()
 
     def remove(self, url):
+        """
+        Store a given server URL in user's servers list
+        """
         return self.__db.remove(url)
 
     def add(self, url):
+        """
+        Add a given server URL in user's servers list.
+        
+        This method checks the remote server BEFORE inserting it.
+        """
         if Server(url).check():
             return self.__db.add(url)
         return False
 
     def pick_random(self):
-        return self.__db.pickRandom()
+        """
+        Pick a random server from user's servers list
+        """
+        return self.__db.pick_random()
 
 
 class DownUpManager:

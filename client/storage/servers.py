@@ -4,9 +4,10 @@ Vodstok server database
 
 import pickle
 import os
-import urlparse
 from random import choice
+
 from downup.server import Server
+from core.helpers import normalize
 
 class ServersDB:
     
@@ -23,10 +24,10 @@ class ServersDB:
 
     def __init__(self, homedir):
         # try to load our database
-        self._db = os.path.join(homedir,'servers')
+        self._db = os.path.join(homedir, 'servers')
         if os.path.isdir(homedir):
             if os.path.isfile(self._db):
-                database = open(self._db,'rb')
+                database = open(self._db, 'rb')
                 self.servers = pickle.load(database)
                 database.close()
             else:
@@ -48,26 +49,11 @@ class ServersDB:
         pickle.dump(self.servers, database)
         database.close()
 
-    def normalize(self, url):
-        """
-        Clean an url in order to add it to the servers list
-        """
-        url_info = urlparse.urlparse(url)
-        server = url_info.netloc
-        uri = url_info.path
-        while '//' in uri:
-            uri = uri.replace('//', '/')
-        url = 'http://%s%s' % (server, uri)
-        if url[-1] != '/':
-            url += '/'
-        return url
-
-
     def remove(self, server):
         """
         Remove a server from the DB given its URL.
         """
-        server = self.normalize(server) 
+        server = normalize(server) 
         if server in self.servers:
             self.servers.remove(server)
             self.sync()
@@ -80,7 +66,7 @@ class ServersDB:
         
         The server URL is not added if already present.
         """
-        server = self.normalize(server)
+        server = normalize(server)
         if server not in self.servers:
             self.servers.append(server)
             self.sync()
@@ -96,7 +82,7 @@ class ServersDB:
         for server in self.servers:
             yield Server(server)
             
-    def pickRandom(self):
+    def pick_random(self):
         """
         Return a randomly chosen server.
         """

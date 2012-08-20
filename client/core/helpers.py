@@ -2,6 +2,22 @@
 Vodstok helpers
 """
 
+from urlparse import urlparse
+
+def normalize(url):
+    """
+    Clean an url in order to add it to the servers list
+    """
+    url_info = urlparse(url)
+    server = url_info.netloc
+    uri = url_info.path
+    while '//' in uri:
+        uri = uri.replace('//', '/')
+    url = 'http://%s%s' % (server, uri)
+    if url[-1] != '/':
+        url += '/'
+    return url
+    
 
 def to_hex(byte_array):
     """

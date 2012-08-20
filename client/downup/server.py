@@ -1,3 +1,9 @@
+"""
+Vodstok server HTTP/S client
+
+Manage communications between Vodstok's client and remote servers
+"""
+
 import re
 import os
 import socket
@@ -11,6 +17,8 @@ from core.exception import ServerIOError
 class Server:	
     """
     Vodstok remote storage client
+    
+    This class is used to communicate with Vodstok's servers.
     """	
 	
     def __init__(self, url):
@@ -30,10 +38,18 @@ class Server:
         )
         self.posturl = self.uri
         self.dlurl = '%s://%s%s?chunk=' % (self.scheme, self.server, self.uri)
-        self.puburl = '%s://%s%s?register=' % (self.scheme, self.server, self.uri)
-        self.statsurl = '%s://%s%s?stats' % (self.scheme, self.server, self.uri)
-        self.epurl = '%s://%s%s?endpoints' % (self.scheme, self.server, self.uri)
-        self.versionurl = '%s://%s%s?version' % (self.scheme, self.server, self.uri)
+        self.puburl = '%s://%s%s?register=' % (
+            self.scheme, self.server, self.uri
+        )
+        self.statsurl = '%s://%s%s?stats' % (
+            self.scheme, self.server, self.uri
+        )
+        self.epurl = '%s://%s%s?endpoints' % (
+            self.scheme, self.server, self.uri
+        )
+        self.versionurl = '%s://%s%s?version' % (
+            self.scheme, self.server, self.uri
+        )
 		
     def upload(self, chunk):
         """
@@ -68,7 +84,8 @@ class Server:
 			
     def download(self, id):
         """
-        Download a chunk of data based on its ID (returned by the upload method above)
+        Download a chunk of data based on its ID
+        (returned by the upload method above)
         """
         try:
             r = urllib2.Request(self.dlurl+id)
@@ -100,7 +117,7 @@ class Server:
             if resp:
                 return (resp.getcode() == 200)
             return False
-        except urllib2.HTTPError,error:
+        except urllib2.HTTPError, error:
             if error.getcode() == 404:
                 return False
             raise ServerIOError()
@@ -129,7 +146,7 @@ class Server:
             raise ServerIOError()
 	
     def alias(self, a):
-        return '%s?%s'%(self.url, a)
+        return '%s?%s' % (self.url, a)
 
     def check(self):
         try:
@@ -149,9 +166,18 @@ class Server:
             resp = urllib2.urlopen(r)
             if resp:
                 content = resp.read()
-                r = re.search('quota:([0-9]+),used:([0-9]+),chunks:([0-9]+),usage:([0-9]+)', content)
+                r = re.search(
+                    ('quota:([0-9]+),used:([0-9]+),'
+                    'chunks:([0-9]+),usage:([0-9]+)'),
+                    content
+                )
                 if r:
-                    return (int(r.group(1)), int(r.group(2)), int(r.group(3)), int(r.group(4)))
+                    return (
+                        int(r.group(1)),
+                        int(r.group(2)),
+                        int(r.group(3)),
+                        int(r.group(4))
+                    )
                 else:
                     return None
             else:

@@ -21,7 +21,7 @@ class User:
     gUser = None
     
     @staticmethod
-    def getInstance():
+    def get_instance():
         """
         Returns a single instance of User class.
         
@@ -40,7 +40,7 @@ class User:
         self.__servers = None
         self.load()
 
-    def getProjectDir(self):
+    def get_project_dir(self):
         """
         Retrieve the project directory (win & nux compatible)
         """
@@ -53,23 +53,23 @@ class User:
         This method loads the current user profile or creates it if this
         profile does not exist.
         """
-        if not self.isInstalled():
+        if not self.is_installed():
             self.install()
         self.__servers = ServersDB(self.__projdir)
 
-    def getServersDB(self):
+    def get_servers_db(self):
         """
         Return an instance of ServersDB class.
         """
         return self.__servers
 
-    def enumServers(self):
+    def enum_servers(self):
         """
         Yields every server registered in the user's database.
         """
         return self.__servers.enum()
 
-    def isInstalled(self):
+    def is_installed(self):
         """
         Check if Vodstok is correctly installed and install it if not.
         """

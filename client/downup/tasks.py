@@ -59,9 +59,15 @@ class AbstractTask:
     # Subtasks management
 	
     def get_left(self):
+        """
+        Return the remaining parts (not already processed)
+        """
         return self.__left
 		
     def get_top_left(self):
+        """
+        Return the first remaining part
+        """
         if len(self.__left)>0:
             return self.__left[0]
         else:
@@ -263,14 +269,21 @@ class DownloadFileTask(AbstractTask):
         self.__file_lock = Lock()
 
         # init tasks
-        tasks = [DownloadChunkTask(self, i, aliases[i]) for i in range(len(aliases))]
+        tasks = [DownloadChunkTask(self, i, aliases[i]) \
+            for i in range(len(aliases))]
         shuffle(tasks)
         self.set_left(tasks)
 
     def is_completed(self):
+        """
+        Check if file task is completed
+        """
         return self.__completed
 
     def get_next_task(self):
+        """
+        If some pieces left and task is running, give a piece to process
+        """
         if len(self.get_left())>0 and self.is_running():
             self.__file_lock.acquire()
             chunk_task = self.get_top_left()
@@ -287,9 +300,11 @@ class DownloadFileTask(AbstractTask):
         if self.is_processing(task):
             self.mark_as_processed(task)
             self.__file_lock.acquire()
-            self.__stream.write_chunk(task.get_chunk(), index = task.get_index())
+            self.__stream.write_chunk(
+                task.get_chunk(), index = task.get_index()
+            )
             self.__file_lock.release()
-            if (len(self.get_processing()) == 0) and (len(self.get_left()) == 0):
+            if len(self.get_processing()) == 0 and len(self.get_left()) == 0:
                 self.on_completed()
             else:
                 if self.__manager is not None:
@@ -303,17 +318,28 @@ class DownloadFileTask(AbstractTask):
             return False
 
     def on_task_error(self, task):
+        """
+        Called if an error occured while processing a task
+        """
         #print '[!] Error during task #%d' % task.getIndex()
         self.mark_as_left(task)
         return
 		
     def on_completed(self):
+        """
+        Called when a task is completed. Called its manager callback
+        if all tasks are completed.
+        """
         self.__completed = True
         if self.__manager is not None:
             self.__manager.on_download_file_completed(self)
 	
 class UploadFileTask(AbstractTask):
-	
+    """
+    This class handles the whole upload process and provides the
+    scheduler with chunk tasks.
+    """
+
     def __init__(self, manager, stream):
         AbstractTask.__init__(self)
         self.__manager = manager
@@ -330,14 +356,24 @@ class UploadFileTask(AbstractTask):
         self.__chunks = []
 
     def is_completed(self):
+        """
+        Check if this task is completed
+        """
         return self.__completed
 		
     def get_next_task(self):
+        """
+        If some pieces left and task is running, give a piece to process
+        """
         if len(self.get_left())>0 and self.is_running():
             self.__file_lock.acquire()
             task = self.get_top_left()
             self.mark_as_processing(task)
-            chunk_task = UploadChunkTask(self, task, self.__stream.read_chunk(index=task))
+            chunk_task = UploadChunkTask(
+                self,
+                task, 
+                self.__stream.read_chunk(index=task)
+            )
             self.__file_lock.release()
             return chunk_task
         else:
@@ -365,6 +401,10 @@ class UploadFileTask(AbstractTask):
             return False
 		
     def on_task_error(self, task):
+        """
+        Called on task error. If more than 3 errors occured, then notify
+        the upload task failed.
+        """
         self.__errors += 1
         if self.__errors > 3:
             if self.__manager is not None:
@@ -374,17 +414,31 @@ class UploadFileTask(AbstractTask):
         return
 		
     def on_completed(self):
+        """
+        Called when the upload task is completed.
+        """
         self.__completed = True
         if self.__manager is not None:
             self.__manager.on_upload_file_completed(self)
 
     def get_aliases(self):
+        """
+        Retrieve the aliases corresponding to every uploaded chunk reference.
+        This is used to store the file's metadata.
+        """
         self.__chunks.sort()
         return [a[1].get_alias() for a in self.__chunks]
 
 
 class DownTask:
 	
+    """
+    This class wraps the download process and manages a download task. This
+    may be redundant with previous classes but this one is the top-level class
+    for download management. Only this one should be used when dealing with
+    download tasks.
+    """
+    
     INIT = -1
     SUMMARY = 0
     RECVING = 1
@@ -393,7 +447,7 @@ class DownTask:
     def __init__(self, manager=None, url='', dest_prefix=''):
         self.uuid = uuid.uuid1()
         self.__manager = manager
-        self.__filename = None
+        self.filename = None
         self.__key = None
         self.__alias = None
         self.__url = url
@@ -405,6 +459,9 @@ class DownTask:
         self.__parse()
 
     def __parse(self):
+        """
+        Parse Vodstok download's URL and extract useful info
+        """
         r = urlparse.urlparse(self.__url)
         self.__scheme = r.scheme
         self.__server = r.netloc
@@ -414,30 +471,64 @@ class DownTask:
             self.__key, self.__chunk_id = r.query.split('-')
             self.__key = self.__key.decode('hex')
             self.__file = MemoryStream('', key=self.__key)
-            self.__alias = '%s://%s%s' % (self.__scheme, self.__server, self.__path)
+            self.__alias = '%s://%s%s' % (
+                self.__scheme,
+                self.__server,
+                self.__path
+            )
         except ValueError:
             raise IncorrectFormatError
 
     def cancel(self):
+        """
+        Cancel this task
+        """
         self.__task.cancel()
 		
     def suspend(self):
+        """
+        Suspend this task.
+        """
         self.__task.suspend()
 		
     def resume(self):
+        """
+        Resume this task
+        """
         self.__task.resume()
 
     def set_manager(self, manager=None):
+        """
+        Set this task's manager. 
+        """
         self.__manager = manager
 	
     def process(self):
+        """
+        Process download.
+        
+        This method creates the download task and queue it into the scheduler.
+        """
         self.__state = DownTask.SUMMARY
         #print self.__alias+'#'+self.__chunk_id
-        self.__task = DownloadFileTask(self, [self.__alias+'?'+self.__chunk_id], self.__file)
+        self.__task = DownloadFileTask(
+            self,
+            [
+                self.__alias+'?'+self.__chunk_id
+            ],
+            self.__file
+        )
         if self.__manager is not None:
             self.__manager.queue_task(self.__task)
 		
     def on_download_file_completed(self, task):
+        """
+        Called when the target file is fully downloaded.
+        
+        This method retrieve the stored data and loop while all the metadata
+        have not been retrieved. That means that a file's matadata can be stored
+        in many chunks, the same way files are stored in vodstok.
+        """
         if self.__state == DownTask.SUMMARY:
             filename, chunks = self.__file.read().split('|')
             if filename == 'metadata':
@@ -446,8 +537,12 @@ class DownTask:
             else:
                 self.__state = DownTask.RECVING
                 self.filename = os.path.join(self.__dst_prefix, filename)
-                self.__file = FileStream(open(self.filename, 'wb'), key=self.__key)
-                self.__task = DownloadFileTask(self, chunks.split(','), self.__file)
+                self.__file = FileStream(
+                    open(self.filename, 'wb'), key=self.__key
+                )
+                self.__task = DownloadFileTask(
+                    self, chunks.split(','), self.__file
+                )
             if self.__manager is not None:
                 self.__manager.queue_task(self.__task)
         elif self.__state == DownTask.RECVING:
@@ -457,15 +552,24 @@ class DownTask:
                 self.__manager.on_task_done(self)
 	
     def on_progress(self, task, done, total):
+        """
+        Notify download progress
+        """
         if self.__state == DownTask.RECVING:
             if self.__manager is not None:
                 self.__manager.on_task_progress(self, done, total)
 
     def on_error(self, task):
+        """
+        Called when an error occurs while downloading
+        """
         self.__manager.on_task_error(self)
 
 class UpTask:
-	
+    """
+    Top-level upload handling class.
+    """
+    
     INIT = -1
     SENDING = 0
     SUMMARY = 1
@@ -485,36 +589,61 @@ class UpTask:
             raise IncorrectParameterError
             
     def set_manager(self, manager=None):
+        """
+        Set task's manager
+        """
         self.__manager = manager
 
     def process(self):
-        # process task
-        # -> launch a file upload
-        #print '[+] Sending chunks ...'
+        """
+        Process upload: enqueue the corresponding task into our scheduler
+        """
         self.__state = UpTask.SENDING
         if self.__manager is not None:
             self.__manager.queue_task(self.__task)
 
     def cancel(self):
+        """
+        Cancel this task
+        """
         self.__task.cancel()
 		
     def suspend(self):
+        """
+        Suspend this task
+        """
         self.__task.suspend()
 		
     def resume(self):
+        """
+        Resume this task
+        """
         self.__task.resume()
 
     def on_upload_file_completed(self, task):
+        """
+        Called when all chunks have been uploaded.
+        
+        Once all chunks were uploaded, we upload a metadata file (created in
+        memory) containing every chunks aliases and servers info. This metadata
+        may be store in multiple chunks, and this may be done recursively, while
+        the whole metadata cannot fit into a single chunk.
+        """
         if self.__state == UpTask.SENDING:
-            meta = '%s|%s' % (self.__filename,','.join(task.get_aliases()))
+            meta = '%s|%s' % (self.__filename, ','.join(task.get_aliases()))
             if len(meta) > Settings.chunk_size:
                 meta = 'metadata|%s' % (','.join(task.get_aliases()))
                 if self.__manager is not None:
-                    self.__task = UploadFileTask(self, MemoryStream(meta, key=self.__key))
+                    self.__task = UploadFileTask(
+                        self, MemoryStream(meta, key=self.__key)
+                    )
                     self.__manager.queue_task(self.__task)
             else:
                 self.__state = UpTask.SUMMARY
-                self.__task = UploadFileTask(self, MemoryStream(meta, key=self.__key))
+                self.__task = UploadFileTask(
+                    self,
+                    MemoryStream(meta, key=self.__key)
+                )
                 if self.__manager is not None:
                     self.__manager.queue_task(self.__task)
         elif self.__state == UpTask.SUMMARY:
@@ -524,6 +653,10 @@ class UpTask:
                 self.__manager.on_task_done(self)
 
     def get_url(self):
+        """
+        Return the uploaded file's URL (link to the single chunk containing
+        the file's metadata.
+        """
         if self.__state == UpTask.DONE:
             # split the alias
             p = urlparse.urlparse(self.__alias)
@@ -534,18 +667,30 @@ class UpTask:
 		
 
     def on_progress(self, task, done, total):
+        """
+        Notify upload progress
+        """
         if self.__state == UpTask.SENDING:
             if self.__manager is not None:
                 self.__manager.on_task_progress(self, done, total)
 
     def on_error(self, task):
+        """
+        Called when the upload process failed
+        """
         self.__manager.on_task_error(self)
 
 	
     def get_key(self):
+        """
+        Retrieve the upload encryption key
+        """
         return self.__key
 
 class TaskStatus:
+    """
+    Task status
+    """
     TASK_PENDING = -1
     TASK_CANCEL = 0
     TASK_RUNNING = 1
@@ -553,7 +698,16 @@ class TaskStatus:
     TASK_ERR = 3
 
 class TaskRef:
-    def __init__(self, task, status=TaskStatus.TASK_PENDING, progress=0.0, speed=0.0):
+    
+    """
+    This class implements a reference onto an existing task. 
+    
+    This reference contains some metadata such as global progress and real-time
+    speed.
+    """
+    
+    def __init__(self, task, status=TaskStatus.TASK_PENDING,
+        progress=0.0, speed=0.0):
         self.object = task
         self.status = status
         self.progress = progress
@@ -561,15 +715,21 @@ class TaskRef:
         self.last = (0, time())
 		
     def update(self, done, total):
-        c, t = self.last
+        """
+        Update task info
+        """
+        count, timestamp = self.last
         now = time()
-        if (time()-t)>0:
-            self.speed = float((done - c)*Settings.chunk_size)/(now-t)
+        if (time()-timestamp)>0:
+            self.speed = float((done - count)*Settings.chunk_size)/(now-timestamp)
         else:
             self.speed = 0
         self.progress = float(done)/total
 		
     def __getattr__(self, attr):
+        """
+        Forward calls to underlying task object
+        """
         if hasattr(self.object, attr):
             return getattr(self.object, attr)
         else:

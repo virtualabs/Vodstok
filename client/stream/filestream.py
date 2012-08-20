@@ -14,6 +14,25 @@ from base64 import b64encode, b64decode
 from core.settings import Settings
 from StringIO import StringIO
 
+
+
+def pad(data):
+    """
+    Add PKCS7 padding to data
+    """
+    length = Settings.block_size - (len(data)%Settings.block_size)
+    for i in range(length):
+        data += chr(length)
+    return data
+
+def unpad(data):
+    """
+    Remove PKCS7 padding
+    """
+    length = ord(data[-1])
+    return data[:-length]
+
+
 class FileStreamIOError(Exception):
     """
     FileStream IO Error exception
@@ -36,28 +55,14 @@ class FileStream:
     inline chunk encryption and decryption.
     """
     def __init__(self, fileobj, key=None):
+        self.filename = None
+        self.mode = None
         self.handle = fileobj
         if key is None:
             self.key = urandom(16)
         else:
             self.key = key
         self.__eof = False
-
-    def __pad(self, data):
-        """
-        Add PKCS7 padding to data
-        """
-        length = Settings.block_size - (len(data)%Settings.block_size)
-        for i in range(length):
-            data += chr(length)
-        return data
-
-    def __unpad(self, data):
-        """
-        Remove PKCS7 padding
-        """
-        length = ord(data[-1])
-        return data[:-length]
 
     def eof(self):
         """
@@ -110,7 +115,7 @@ class FileStream:
         """
         Encrypt chunk
         """
-        chunk_padded = self.__pad(chunk)
+        chunk_padded = pad(chunk)
         enc = AES.new(self.key, AES.MODE_CBC)
         return b64encode(enc.encrypt(chunk_padded))
 
@@ -119,7 +124,7 @@ class FileStream:
         Decrypt chunk
         """
         dec = AES.new(self.key, AES.MODE_CBC)
-        return self.__unpad(dec.decrypt(b64decode(enc_chunk)))
+        return unpad(dec.decrypt(b64decode(enc_chunk)))
 
     def read_chunk(self, index=None):
         """

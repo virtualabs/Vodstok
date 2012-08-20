@@ -8,7 +8,6 @@
 
 """
 
-import os
 import sys
 import re
 import socket
@@ -53,7 +52,7 @@ class Vodstok:
     """
     def __init__(self):
         # read user's endpoint list
-        self._db = User.getInstance().getServersDB()
+        self._db = User.get_instance().get_servers_db()
 
 
 
@@ -108,7 +107,7 @@ class Vodstok:
         Publish a given server on every other servers
         """
         for _server in self._db.enum():
-            endpoints = _server.listRegisteredEndpoints()
+            endpoints = _server.list_registered_endpoints()
             for endpoint in endpoints:
                 if endpoint.check():
                     self._db.add(endpoint.url)
@@ -116,7 +115,7 @@ class Vodstok:
         print '[i] Propagating servers URLs ...'
         self.servers = None
         for _server in self._db.enum():
-            endpoint = self._db.pickRandom()
+            endpoint = self._db.pick_random()
             try:
                 endpoint.publish(_server.url)
             except ServerIOError:
@@ -127,7 +126,7 @@ class Vodstok:
         """
         Retrieve a random server from registered servers
         """
-        return self._db.pickRandom()
+        return self._db.pick_random()
     
     def is_vds_url(self, url):
         """
@@ -149,11 +148,11 @@ class Vodstok:
             sys.stdout.flush()
             res = server.capacity()
             if res:
-                quota,used,chunks,usage = res
+                quota, used, chunks, usage = res
                 total_chunks += chunks
                 total_used += used
                 total_quota += quota
-            i+=1
+            i += 1
         sys.stdout.write('\n')
         return (total_quota, total_used, total_chunks)
 
@@ -164,7 +163,7 @@ class Vodstok:
 
 if __name__ == '__main__':
     a = Vodstok()
-    (options,args) = Options().parse_args()
+    (options, args) = Options().parse_args()
     if options.listserv:
         a.list_servers()
     elif options.addserv:
@@ -184,7 +183,7 @@ if __name__ == '__main__':
         print '[i] Updating servers ...'
         a.update_servers()
     elif options.getsize:
-        quota,used,chunks = a.get_global_capacity()
+        quota, used, chunks = a.get_global_capacity()
         print ''
         print 'Statistics:'
         print ''
