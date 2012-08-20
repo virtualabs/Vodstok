@@ -66,6 +66,8 @@ class Server:
                 return resp.read()
             else:
                 raise ServerIOError()
+        except urllib2.HTTPError:
+            raise ServerIOError()
         except urllib2.URLError:
             raise ServerIOError()
         except httplib.IncompleteRead:
@@ -103,6 +105,16 @@ class Server:
                 return [Server(url) for url in resp.read().split(',')]
             return []
         except urllib2.HTTPError:
+            raise ServerIOError()
+        except urllib2.URLError:
+            raise ServerIOError()
+        except httplib.IncompleteRead:
+            raise ServerIOError()
+        except httplib.BadStatusLine:
+            raise ServerIOError()
+        except socket.timeout:
+            raise ServerIOError()
+        except socket.error:
             raise ServerIOError()
 	
     def alias(self, a):

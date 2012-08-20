@@ -1,11 +1,11 @@
 import sys
 from time import time
 from core.helpers import formatSpeed
-from core.exception import IncorrectParameterError,IncorrectFormatError
-from server import Server
+from core.exception import IncorrectParameterError, IncorrectFormatError
+from downup.server import Server
 from storage.user import User
-from scheduler import Scheduler
-from tasks import UpTask,DownTask,TaskStatus,TaskRef
+from downup.scheduler import Scheduler
+from downup.tasks import UpTask, DownTask, TaskStatus, TaskRef
 
 class ServersManager:
 
@@ -21,6 +21,9 @@ class ServersManager:
     
     @staticmethod
     def getInstance():
+        """
+        Static method returning a single instance
+        """
         if ServersManager.gInst is None:
             ServersManager.gInst = ServersManager()
         return ServersManager.gInst
@@ -180,15 +183,15 @@ class DownUpManager:
         """
         if task.uuid not in self.__tasks:
             self.__tasks[task.uuid] = TaskRef(task)
-        self.notifyTaskCreated(task.uuid)
+            self.notifyTaskCreated(task.uuid)
 
     def upload(self, filename):
         """
         Upload a file
         """
-        t = UpTask(self, filename)
-        self.__registerTask(t)
-        return t.uuid
+        task = UpTask(self, filename)
+        self.__registerTask(task)
+        return task.uuid
 
     def download(self, url, prefix=''):
         """
@@ -196,9 +199,9 @@ class DownUpManager:
 
         The prefix parameter can be used to specify a destination directory
         """
-        t = DownTask(self, url, prefix)
-        self.__registerTask(t)
-        return t.uuid
+        task = DownTask(self, url, prefix)
+        self.__registerTask(task)
+        return task.uuid
             
     def startTask(self, task):
         """
@@ -208,7 +211,7 @@ class DownUpManager:
         """
         if task in self.__tasks:
             self.__tasks[task].object.process()
-        self.notifyTaskStarted(task)
+            self.notifyTaskStarted(task)
 
     def removeTask(self, task):
         """
@@ -278,18 +281,18 @@ class DownUpManager:
 
     def onTaskDone(self, task):
         if task.uuid in self.__tasks:
-            self.__tasks[task.uuid].status=TaskStatus.TASK_DONE
+            self.__tasks[task.uuid].status = TaskStatus.TASK_DONE
             self.notifyTaskDone(task.uuid)
 
     def onTaskError(self, task):
         if task.uuid in self.__tasks:
-            self.__tasks[task.uuid].status=TaskStatus.TASK_ERR
+            self.__tasks[task.uuid].status = TaskStatus.TASK_ERR
             self.notifyTaskError(task.uuid)
 
     def onTaskProgress(self, task, done, total):
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].update(done, total)
-            self.notifyTaskProgress(task.uuid,float(done)/total)
+            self.notifyTaskProgress(task.uuid, float(done)/total)
 
 
 class CmdLineManager:
@@ -302,8 +305,8 @@ class CmdLineManager:
     """
 
     def __init__(self):
-        self.m = DownUpManager()
-        self.m.registerListener(self)
+        self._manager = DownUpManager()
+        self._manager.registerListener(self)
         self.task = None
         self.kind = ''
         self.start = time()
@@ -314,13 +317,14 @@ class CmdLineManager:
         """
         try:
             self.kind = 'up'
-            self.task = self.m.upload(filename)
-            self.m.startTask(self.task)
+            self.task = self._manager.upload(filename)
+            self._manager.startTask(self.task)
         except IncorrectParameterError:
             print '[!] Error: bad file name'
-            self.m.shutdown()
+            self._manager.shutdown()
 
-    def download(self, filename,prefix=''):
+
+    def download(self, filename, prefix=''):
         """
         Download a file
         
@@ -328,43 +332,45 @@ class CmdLineManager:
         """
         try:
             self.kind = 'down'
-            self.task = self.m.download(filename,prefix)
-            self.m.startTask(self.task)
+            self.task = self._manager.download(filename, prefix)
+            self._manager.startTask(self.task)
         except IncorrectFormatError:
             print '[!] Error: bad URL format'
-            self.m.shutdown()
+            self._manager.shutdown()
             
     def onTaskDone(self, task):
         """
         Task completed callback
         """
-        if task==self.task:
+        if task == self.task:
             if self.kind == 'up':
-                m = 'Uploading '
+                action = 'Uploading '
             else:
-                m = 'Downloading '
-            sys.stdout.write('\r%s: ['%m+'='*40 + '] %s     ' % formatSpeed(self.m.getTask(task).speed))
+                action = 'Downloading '
+            sys.stdout.write('\r%s: [' % action +'='*40 + '] %s     ' % \
+                formatSpeed(self._manager.getTask(task).speed))
             sys.stdout.write('\n')
             if self.kind == 'up':
-                print 'Url: %s' % self.m.getTask(task).getUrl()
+                print 'Url: %s' % self._manager.getTask(task).getUrl()
             else:
-                print 'File downloaded to %s' % self.m.getTask(task).filename
-            self.m.shutdown()
+                print 'File downloaded to %s' % self._manager.getTask(task).filename
+            self._manager.shutdown()
 
     def onTaskProgress(self, task, progress):
         """
         Task progress callback
         """
-        if task==self.task:
+        if task == self.task:
             if self.kind == 'up':
-                m = 'Uploading '
+                action = 'Uploading '
             else:
-                m = 'Downloading '
-            n = int(progress*40)
-            sys.stdout.write('\r%s: ['%m+'='*n + ' '*(40-n)+'] %s     ' % formatSpeed(self.m.getTask(task).speed))
+                action = 'Downloading '
+            width = int(progress*40)
+            sys.stdout.write('\r%s: [' % action +'='*width + ' '*(40-width)+'] %s     ' % \
+                formatSpeed(self._manager.getTask(task).speed))
             sys.stdout.flush()
 
-    def onTaskCancel(self,task):
+    def onTaskCancel(self, task):
         """
         Task canceled callback (implemented but never called since we do not allow task cancelation)
         """
@@ -376,17 +382,18 @@ class CmdLineManager:
 
         Stop everything if an error occured.
         """
-        if task==self.task:
+        if task == self.task:
             sys.stdout.write('\n')
             print '[!] Unable to upload'
-            self.m.shutdown()
+            self._manager.shutdown()
             
     def onTaskCreated(self, task):
         if self.kind == 'up':
-            m = 'Uploading '
+            action = 'Uploading '
         else:
-            m = 'Downloading '
-        sys.stdout.write('\r%s: ['%m+' '*40 + '] %s     ' % formatSpeed(self.m.getTask(task).speed))
+            action = 'Downloading '
+        sys.stdout.write('\r%s: [' % action +' '*40 + '] %s     ' % \
+            formatSpeed(self._manager.getTask(task).speed))
         return
         
     def onTaskStarted(self, task):

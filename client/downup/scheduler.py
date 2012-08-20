@@ -1,3 +1,10 @@
+"""
+Vodstok asynchronous task scheduler
+
+Okay, maybe Twisted may help a bit but i'm not a twisted lover.
+"""
+
+import sys
 from threading import Thread
 from time import sleep
 from core.settings import Settings
@@ -19,6 +26,7 @@ class Worker(Thread):
 		
     def run(self):
         while not self.__canceled:
+            sys.stdout.flush()
             task = self.sched.getPendingTask()
             if task is not None:
                 if task.process(self.sched.acquireRepository()):
@@ -39,8 +47,8 @@ class Scheduler(Thread):
         self.__canceled = False
 
     def cancel(self):
-        for w in self.workers:
-            w.cancel()
+        for worker in self.workers:
+            worker.cancel()
         self.__canceled = True
 
     def getRandomRepository(self):
@@ -88,9 +96,10 @@ class Scheduler(Thread):
 
     def run(self):
         # start workers
-        for w in self.workers:
-            w.start()
+        for worker in self.workers:
+            worker.start()
         # let workers do the job
         while len(self.tasks)>0 and not self.__canceled:
-            sleep(0.1)
+            # using pass is better than sleep =)
+            pass
 			

@@ -2,17 +2,20 @@
 
 """
 
-  					      Voluntary Distributed Storage Kit
-						----------------------------
-					           Download/Upload client
+                                              Voluntary Distributed Storage Kit
+                                                ----------------------------
+                                                   Download/Upload client
 
 """
 
-import os,sys,re,socket
+import os
+import sys
+import re
+import socket
 from optparse import OptionParser
 from core.helpers import convert_bytes
 from downup.manager import CmdLineManager
-from downup.server import Server,ServerIOError
+from downup.server import Server, ServerIOError
 from storage.user import User
 
 socket.setdefaulttimeout(30.0)
@@ -21,165 +24,180 @@ VERSION = '1.2.3'
 
 
 class Options(OptionParser):
-	"""
-	Command-line option parser (using optparse)
-	"""
-	def __init__(self):
-		OptionParser.__init__(self, usage="usage: %prog [options] [URL | FILE]")
-		self.add_option('-l','--list-servers',action="store_true",dest='listserv',help="List saved servers URL")
-		self.add_option('-a','--add-server',action="store",metavar='SERVER',dest='addserv',help="Add an existing server")
-		self.add_option('-r','--rm-server',action="store",metavar='SERVER',dest='delserv',help="Remove an existing server")
-		self.add_option('-p','--publish',action="store",metavar='SERVER',dest='pubserv',help="Publish an existing server")
-		self.add_option('-w','--write',action="store",dest='dest_dir',metavar='DIRECTORY',help="Set destination directory",default='')
-		self.add_option('-s','--size',action="store_true",dest="getsize",help="Displays distributed storage capacity")
-		self.add_option('-v','--version',action="store_true",dest="showver",help="Show version")
-		self.add_option('-u','--update',action="store_true",dest="update",help="Update servers")
+    """
+    Command-line option parser (using optparse)
+    """
+    def __init__(self):
+        OptionParser.__init__(self, usage="usage: %prog [options] [URL | FILE]")
+        self.add_option('-l', '--list-servers', action="store_true",
+            dest='listserv', help="List saved servers URL")
+        self.add_option('-a', '--add-server', action="store",
+            metavar='SERVER', dest='addserv', help="Add an existing server")
+        self.add_option('-r', '--rm-server', action="store",
+            metavar='SERVER', dest='delserv', help="Remove an existing server")
+        self.add_option('-p', '--publish', action="store",
+            metavar='SERVER', dest='pubserv',help="Publish an existing server")
+        self.add_option('-w', '--write', action="store", dest='dest_dir',
+            metavar='DIRECTORY', help="Set destination directory", default='')
+        self.add_option('-s', '--size', action="store_true", dest="getsize",
+            help="Displays distributed storage capacity")
+        self.add_option('-v', '--version', action="store_true", dest="showver",
+            help="Show version")
+        self.add_option('-u', '--update', action="store_true", dest="update",
+            help="Update servers")
 
 
 class Vodstok:
-	"""
-	Vodstok client.
-	"""
-	def __init__(self):
-		# read user's endpoint list
-		self.db = User.getInstance().getServersDB()
+    """
+    Vodstok client.
+    """
+    def __init__(self):
+        # read user's endpoint list
+        self._db = User.getInstance().getServersDB()
 
 
 
-	#
-	#	Servers management
-	#
+    #
+    #       Servers management
+    #
 
-	def listServers(self):
-		"""
-		Displays every storage server declared
-		"""
-		i = 0
-		for server in self.db.enum():
-			print '-> %s' % server
-			i += 1
-		print '%d registered server(s)' % i
-		
-	def addServer(self, server):
-		"""
-		Add a server to the servers database
-		"""
-		self.db.add(server)
-		return
-		
-	def removeServer(self, server):
-		"""
-		Remove a server from the servers database
-		"""
-		self.db.remove(server)
-		return
+    def list_servers(self):
+        """
+        Displays every storage server declared
+        """
+        i = 0
+        for server in self._db.enum():
+            print '-> %s' % server
+            i += 1
+        print '%d registered server(s)' % i
+            
+    def add_server(self, server):
+        """
+        Add a server to the servers database
+        """
+        self._db.add(server)
+        return
+            
+    def remove_server(self, server):
+        """
+        Remove a server from the servers database
+        """
+        self._db.remove(server)
+        return
 
-	def publishServer(self, server):
-		"""
-		Publish a given server on every other servers
-		"""
-		for e in self.db.enum():
-			if e.url!=server:
-				sys.stdout.write('- publishing on %s ... ' % e.url)
-				if e.publish(server):
-					sys.stdout.write('ok\n')
-				else:
-					sys.stdout.write('ko\n')
+    def publish_server(self, server):
+        """
+        Publish a given server on every other servers
+        """
+        for _server in self._db.enum():
+            if _server.url != server:
+                sys.stdout.write('- publishing on %s ... ' % _server.url)
+                if _server.publish(server):
+                    sys.stdout.write('ok\n')
+                else:
+                    sys.stdout.write('ko\n')
 
-	def testServer(self, url):
-		return Server(url).check()
+    def test_server(self, url):
+        """
+        Test a remote server to check if it is a valid vodstok storage server
+        """
+        return Server(url).check()
 
-	def updateServers(self):
-		"""
-		Publish a given server on every other servers
-		"""
-		for e in self.db.enum():
-			servers = e.listRegisteredEndpoints()
-			for s in servers:
-				if s.check():
-					self.db.add(s.url)
+    def update_servers(self):
+        """
+        Publish a given server on every other servers
+        """
+        for _server in self._db.enum():
+            endpoints = _server.listRegisteredEndpoints()
+            for endpoint in endpoints:
+                if endpoint.check():
+                    self._db.add(endpoint.url)
 
-		print '[i] Propagating servers URLs ...'
-		self.servers = None
-		for s in self.db.enum():
-			ep = self.db.pickRandom()
-			try:
-				ep.publish(s.url)
-			except ServerIOError:
-				pass
-		print '[i] Done.'
-		
-	def getRandomServer(self, filesize):
-		return self.db.pickRandom()
-	
-	def isVdsUrl(self, url):
-		"""
-		Check wether the provided URL is a Vodstok URL or not
-		"""
-		return (re.match('^(http|https)://([^\?]+)\?(.*)$', url) is not None)
+        print '[i] Propagating servers URLs ...'
+        self.servers = None
+        for _server in self._db.enum():
+            endpoint = self._db.pickRandom()
+            try:
+                endpoint.publish(_server.url)
+            except ServerIOError:
+                pass
+        print '[i] Done.'
+            
+    def get_random_server(self, filesize=0):
+        """
+        Retrieve a random server from registered servers
+        """
+        return self._db.pickRandom()
+    
+    def is_vds_url(self, url):
+        """
+        Check wether the provided URL is a Vodstok URL or not
+        """
+        return (re.match('^(http|https)://([^\?]+)\?(.*)$', url) is not None)
 
-	def getGlobalCapacity(self):
-		"""
-		Computes the overall storage capacity (based on every servers declared)
-		"""
-		total_chunks = 0
-		total_used = 0
-		total_quota = 0
-		i = 1
-		for server in self.db.enum():
-			sys.stdout.write('\r[+] Computing global capacity ...%0.2f%%' % (float(i)*100/len(self.db)))
-			sys.stdout.flush()
-			res = server.capacity()
-			if res:
-				quota,used,chunks,usage = res
-				total_chunks += chunks
-				total_used += used
-				total_quota += quota
-			i+=1
-		sys.stdout.write('\n')
-		return (total_quota, total_used, total_chunks)
+    def get_global_capacity(self):
+        """
+        Computes the overall storage capacity (based on every servers declared)
+        """
+        total_chunks = 0
+        total_used = 0
+        total_quota = 0
+        i = 1
+        for server in self._db.enum():
+            cap = (float(i)*100/len(self._db))
+            sys.stdout.write('\r[+] Computing global capacity ...%0.2f%%' % cap)
+            sys.stdout.flush()
+            res = server.capacity()
+            if res:
+                quota,used,chunks,usage = res
+                total_chunks += chunks
+                total_used += used
+                total_quota += quota
+            i+=1
+        sys.stdout.write('\n')
+        return (total_quota, total_used, total_chunks)
 
 
 #
-#	Vodstok Main
+#       Vodstok Main
 #
 
 if __name__ == '__main__':
-	a = Vodstok()
-	(options,args) = Options().parse_args()
-	if options.listserv:
-		a.listServers()
-	elif options.addserv:
-		print '[i] Testing remote server ...'
-		if a.testServer(options.addserv):
-			print '[i] Registering server %s' % options.addserv
-			a.addServer(options.addserv)
-		else:
-			print '[!] Server does not seem to work properly.'
-	elif options.delserv:
-		print '[i] Removing server ...'
-		a.removeServer(options.delserv)
-	elif options.pubserv:
-		print '[i] Publishing server ...'
-		a.publishServer(options.pubserv)
-	elif options.update:
-		print '[i] Updating servers ...'
-		a.updateServers()
-	elif options.getsize:
-		quota,used,chunks = a.getGlobalCapacity()
-		print ''
-		print 'Statistics:'
-		print ''
-		print '- Global storage space   : %s' % convert_bytes(quota)
-		print '- Used storage space     : %s' % convert_bytes(used)
-		print '- # of chunks            : %d' % chunks
-	elif options.showver:
-		print 'Vodstok version %s - virtualabs.fr' % VERSION		
-	elif len(args)>=1 :
-		manager = CmdLineManager()
-		if a.isVdsUrl(args[0]):
-			manager.download(args[0], options.dest_dir)
-		else:		
-			manager.upload(args[0])
-	else:
-		Options().print_help()	
+    a = Vodstok()
+    (options,args) = Options().parse_args()
+    if options.listserv:
+        a.list_servers()
+    elif options.addserv:
+        print '[i] Testing remote server ...'
+        if a.test_server(options.addserv):
+            print '[i] Registering server %s' % options.addserv
+            a.add_server(options.addserv)
+        else:
+            print '[!] Server does not seem to work properly.'
+    elif options.delserv:
+        print '[i] Removing server ...'
+        a.remove_server(options.delserv)
+    elif options.pubserv:
+        print '[i] Publishing server ...'
+        a.publish_server(options.pubserv)
+    elif options.update:
+        print '[i] Updating servers ...'
+        a.update_servers()
+    elif options.getsize:
+        quota,used,chunks = a.get_global_capacity()
+        print ''
+        print 'Statistics:'
+        print ''
+        print '- Global storage space   : %s' % convert_bytes(quota)
+        print '- Used storage space     : %s' % convert_bytes(used)
+        print '- # of chunks            : %d' % chunks
+    elif options.showver:
+        print 'Vodstok version %s - virtualabs.fr' % VERSION            
+    elif len(args)>=1 :
+        manager = CmdLineManager()
+        if a.is_vds_url(args[0]):
+            manager.download(args[0], options.dest_dir)
+        else:           
+            manager.upload(args[0])
+    else:
+        Options().print_help()  

@@ -3,7 +3,8 @@ Storage helpers
 """
 
 import os
-from servers import ServersDB
+from storage.servers import ServersDB
+from core.exception import StorageException
 
 class User:
 	
@@ -35,7 +36,7 @@ class User:
         Constructor
         """
         self.__homedir = os.getenv('USERPROFILE') or os.getenv('HOME')
-        self.__projdir = os.path.join(self.__homedir,User.PROJECT_DIR)
+        self.__projdir = os.path.join(self.__homedir, User.PROJECT_DIR)
         self.__servers = None
         self.load()
 
@@ -73,7 +74,9 @@ class User:
         Check if Vodstok is correctly installed and install it if not.
         """
         try:
-            return os.path.exists(os.path.join(self.__homedir,User.PROJECT_DIR))
+            return os.path.exists(
+                os.path.join(self.__homedir, User.PROJECT_DIR)
+            )
         except:
             raise StorageException()
 		
@@ -85,7 +88,3 @@ class User:
             os.mkdir(self.__projdir)
         except:
             raise StorageException()
-			
-if __name__ == '__main__':
-    sto = UserStorage()
-    sto.load()

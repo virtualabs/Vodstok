@@ -1,6 +1,16 @@
-from os import urandom,SEEK_SET,SEEK_END
+"""
+Vodstok file streams
+
+Streams are commonly used in Vodstok to read and write data,
+especially data coming from encrypted chunks. These streams
+allow multipart upload and download with completely transparent
+encryption.
+
+"""
+
+from os import urandom, SEEK_SET, SEEK_END
 from Crypto.Cipher import AES
-from base64 import b64encode,b64decode
+from base64 import b64encode, b64decode
 from core.settings import Settings
 from StringIO import StringIO
 
@@ -37,17 +47,17 @@ class FileStream:
         """
         Add PKCS7 padding to data
         """
-        l = Settings.block_size - (len(data)%Settings.block_size)
-        for i in range(l):
-            data += chr(l)
+        length = Settings.block_size - (len(data)%Settings.block_size)
+        for i in range(length):
+            data += chr(length)
         return data
 
     def __unpad(self, data):
         """
         Remove PKCS7 padding
         """
-        l = ord(data[-1])
-        return data[:-l]
+        length = ord(data[-1])
+        return data[:-length]
 
     def eof(self):
         """
@@ -83,8 +93,8 @@ class FileStream:
         """
         size = self.size()
         nchunks = size/Settings.chunk_size
-        if nchunks*Settings.chunk_size<size:
-            nchunks+=1
+        if nchunks*Settings.chunk_size < size:
+            nchunks += 1
         return nchunks
 
     def open(self):
@@ -93,7 +103,7 @@ class FileStream:
         """
         try:
             self.handle = open(self.filename, self.mode)
-        except IOError,e:
+        except IOError:
             raise FileStreamIOError()
 
     def encryptChunk(self, chunk):
@@ -133,7 +143,7 @@ class FileStream:
         else:
             raise FileStreamEOF()
 
-    def writeChunk(self, bytes, index=None):
+    def writeChunk(self, content, index=None):
         """
         Write chunk to file. If index is given, write the index-th chunk to file.
         """
@@ -144,10 +154,10 @@ class FileStream:
             self.handle.seek(offset, SEEK_SET)
 		
         # decrypt chunk
-        dec_chunk = self.decryptChunk(bytes)
+        decrypted_chunk = self.decryptChunk(content)
         try:
-            self.handle.write(dec_chunk)
-        except IOError,e:
+            self.handle.write(decrypted_chunk)
+        except IOError:
             raise FileStreamIOError()
 
     def close(self):
@@ -158,9 +168,23 @@ class FileStream:
             self.handle.close()
 
 class MemoryStream(FileStream):
-    def __init__(self, buffer, key=None):
-        FileStream.__init__(self, StringIO(buffer), key)
+    
+    """
+    Memory streams are the same as file streams, but only works in pure
+    memory (no file created).
+    
+    This kind of stream is used by vodstok core to handle metadata storage
+    over multiple chunks.
+    """
+    
+    def __init__(self, memory_block, key=None):
+        FileStream.__init__(self, StringIO(memory_block), key)
 
     def read(self):
+        """
+        Read the entire stream.
+        
+        This method returns the stream's content
+        """
         self.handle.seek(0, SEEK_SET)
         return self.handle.getvalue()

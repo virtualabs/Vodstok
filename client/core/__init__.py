@@ -1,4 +1,9 @@
-from exception import *
+"""
+Vodstok exceptions module
+"""
+
+from exception import ServerIOError, \
+    IncorrectFormatError, IncorrectParameterError
 
 __all__ = [
     'ServerIOError',

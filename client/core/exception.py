@@ -1,3 +1,8 @@
+"""
+
+Vodstok Exceptions
+
+"""
 
 class IncorrectParameterError(Exception):
     """
@@ -14,5 +19,15 @@ class ServerIOError(Exception):
         Exception.__init__(self)
 
 class IncorrectFormatError(Exception):
+    """
+    Incorrect format error
+    """
+    def __init__(self):
+        Exception.__init__(self)
+        
+class StorageException(Exception):
+    """
+    Storage related error
+    """
     def __init__(self):
         Exception.__init__(self)
