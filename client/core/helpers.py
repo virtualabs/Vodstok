@@ -1,7 +1,5 @@
 """
-
 Vodstok helpers
-
 """
 
 
@@ -39,9 +37,9 @@ def convert_bytes(size):
         size = '%.2f B' % size
     return size
 
-def formatSpeed(speed):
+def format_speed(speed):
     """
-    Format speed text in bytes,Kb,Mb and Gb per sec.
+    Format speed text in bytes, Kb, Mb and Gb per sec.
     """
     if speed > 2**30:
         return '%0.2f Gb/s' % (float(speed)/2**30)

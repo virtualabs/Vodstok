@@ -1,6 +1,6 @@
 import sys
 from time import time
-from core.helpers import formatSpeed
+from core.helpers import format_speed
 from core.exception import IncorrectParameterError, IncorrectFormatError
 from downup.server import Server
 from storage.user import User
@@ -20,7 +20,7 @@ class ServersManager:
     gInst = None
     
     @staticmethod
-    def getInstance():
+    def get_instance():
         """
         Static method returning a single instance
         """
@@ -31,7 +31,7 @@ class ServersManager:
     def __init__(self):
         self.__db = User.getInstance().getServersDB()
 
-    def checkServers(self):
+    def check_servers(self):
         print '[i] Checking servers ...'
         for server in self.__db.enum():
             sys.stdout.write('+ checking %s ... '%server.url)
@@ -50,7 +50,7 @@ class ServersManager:
             return self.__db.add(url)
         return False
 
-    def pickRandom(self):
+    def pick_random(self):
         return self.__db.pickRandom()
 
 
@@ -75,19 +75,19 @@ class DownUpManager:
     gDownUpManager = None
 
     @staticmethod
-    def getInstance():
+    def get_instance():
         if DownUpManager.gDownUpManager is None:
             DownUpManager.gDownUpManager = DownUpManager()
         return DownUpManager.gDownUpManager
 
     def __init__(self):
-        self.__scheduler = Scheduler(ServersManager.getInstance())
+        self.__scheduler = Scheduler(ServersManager.get_instance())
         self.__tasks = {}
         self.__running = False
         self.__listeners = []
-        self.__ensureRun()
+        self.__ensure_run()
 
-    def __ensureRun(self):
+    def __ensure_run(self):
         """
         Make sure the scheduler is running
         """
@@ -97,14 +97,14 @@ class DownUpManager:
 
 	## Listeners
 
-    def registerListener(self, listener):
+    def register_listener(self, listener):
         """
         Register a listener
         """
         if listener not in self.__listeners:
             self.__listeners.append(listener)
 
-    def removeListener(self, listener):
+    def remove_listener(self, listener):
         """
         Unregister a listener
         """
@@ -113,84 +113,84 @@ class DownUpManager:
 
 	## Events
 
-    def notifyTaskCreated(self, task):
+    def notify_task_created(self, task):
         """
         Notify listeners about a new task
         """
         for listener in self.__listeners:
-            listener.onTaskCreated(task)
+            listener.on_task_created(task)
 
-    def notifyTaskStarted(self, task):
+    def notify_task_started(self, task):
         """
         Notify listeners about a started task
         """
         for listener in self.__listeners:
-            listener.onTaskStarted(task)
+            listener.on_task_started(task)
 
-    def notifyTaskDone(self, task):
+    def notify_task_done(self, task):
         """
         Notify listeners about a completed task
         """
         for listener in self.__listeners:
-            listener.onTaskDone(task)
+            listener.on_task_done(task)
 
-    def notifyTaskProgress(self, task, progress):
+    def notify_task_progress(self, task, progress):
         """
         Notify listeners about an active task
         """
         for listener in self.__listeners:
-            listener.onTaskProgress(task, progress)
+            listener.on_task_progress(task, progress)
 
-    def notifyTaskCancel(self, task):
+    def notify_task_cancel(self, task):
         """
         Notify listeners about a canceled task
         """
         for listener in self.__listeners:
-            listener.onTaskCancel(task)
+            listener.on_task_cancel(task)
 
-    def notifyTaskSuspended(self, task):
+    def notify_task_suspended(self, task):
         """
         Notify listeners about a suspended task
         """
         for listener in self.__listeners:
-            listener.onTaskSuspended(task)
+            listener.on_task_suspended(task)
 
-    def notifyTaskResumed(self, task):
+    def notify_task_resumed(self, task):
         """
         Notify listeners about a resumed task
         """
         for listener in self.__listeners:
-            listener.onTaskResumed(task)
+            listener.on_task_resumed(task)
 
-    def notifyTaskError(self, task):
+    def notify_task_error(self, task):
         """
         Notify listeners about an error that occured during task processing
         """
         for listener in self.__listeners:
-            listener.onTaskError(task)
+            listener.on_task_error(task)
 
     ## Task management
 
-    def queueTask(self, task):
+    def queue_task(self, task):
         """
         Queue a given task (forward the task directly to the scheduler)
         """
-        self.__scheduler.queueTask(task)
+        self.__scheduler.queue_task(task)
 
-    def __registerTask(self, task):
+    def __register_task(self, task):
         """
         Register a new task
         """
         if task.uuid not in self.__tasks:
             self.__tasks[task.uuid] = TaskRef(task)
-            self.notifyTaskCreated(task.uuid)
+            self.notify_task_created(task.uuid)
 
     def upload(self, filename):
         """
         Upload a file
         """
         task = UpTask(self, filename)
-        self.__registerTask(task)
+        self.__register_task(task)
         return task.uuid
 
     def download(self, url, prefix=''):
@@ -200,10 +200,10 @@ class DownUpManager:
         The prefix parameter can be used to specify a destination directory
         """
         task = DownTask(self, url, prefix)
-        self.__registerTask(task)
+        self.__register_task(task)
         return task.uuid
             
-    def startTask(self, task):
+    def start_task(self, task):
         """
         Start a given task
 
@@ -211,9 +211,9 @@ class DownUpManager:
         """
         if task in self.__tasks:
             self.__tasks[task].object.process()
-            self.notifyTaskStarted(task)
+            self.notify_task_started(task)
 
-    def removeTask(self, task):
+    def remove_task(self, task):
         """
         Remove task.
 
@@ -223,7 +223,7 @@ class DownUpManager:
             self.__tasks[task].cancel()
             del self.__tasks[task]
 
-    def suspendTask(self, task):
+    def suspend_task(self, task):
         """
         Suspend task.
 
@@ -232,7 +232,7 @@ class DownUpManager:
         if task in self.__tasks:
             self.__tasks[task].suspend()
 
-    def resumeTask(self, task):
+    def resume_task(self, task):
         """
         Resume task.
 
@@ -241,7 +241,7 @@ class DownUpManager:
         if task in self.__tasks:
             self.__tasks[task].resume()
 
-    def getTaskStatus(self, task):
+    def get_task_status(self, task):
         """
         Retrieve task status.
 
@@ -250,7 +250,7 @@ class DownUpManager:
         if task in self.__tasks:
             return self.__tasks[task].status
 
-    def getTask(self, task):
+    def get_task(self, task):
         """
         Return an internal task object
         """
@@ -265,7 +265,7 @@ class DownUpManager:
         """
         if task in self.__tasks:
             self.__tasks[task].cancel()
-        self.notifyTaskCancel(task)
+        self.notify_task_cancel(task)
 
     def shutdown(self):
         """
@@ -279,20 +279,20 @@ class DownUpManager:
 
     ## Events
 
-    def onTaskDone(self, task):
+    def on_task_done(self, task):
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].status = TaskStatus.TASK_DONE
-            self.notifyTaskDone(task.uuid)
+            self.notify_task_done(task.uuid)
 
-    def onTaskError(self, task):
+    def on_task_error(self, task):
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].status = TaskStatus.TASK_ERR
-            self.notifyTaskError(task.uuid)
+            self.notify_task_error(task.uuid)
 
-    def onTaskProgress(self, task, done, total):
+    def on_task_progress(self, task, done, total):
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].update(done, total)
-            self.notifyTaskProgress(task.uuid, float(done)/total)
+            self.notify_task_progress(task.uuid, float(done)/total)
 
 
 class CmdLineManager:
@@ -306,7 +306,7 @@ class CmdLineManager:
 
     def __init__(self):
         self._manager = DownUpManager()
-        self._manager.registerListener(self)
+        self._manager.register_listener(self)
         self.task = None
         self.kind = ''
         self.start = time()
@@ -318,7 +318,7 @@ class CmdLineManager:
         try:
             self.kind = 'up'
             self.task = self._manager.upload(filename)
-            self._manager.startTask(self.task)
+            self._manager.start_task(self.task)
         except IncorrectParameterError:
             print '[!] Error: bad file name'
             self._manager.shutdown()
@@ -333,12 +333,12 @@ class CmdLineManager:
         try:
             self.kind = 'down'
             self.task = self._manager.download(filename, prefix)
-            self._manager.startTask(self.task)
+            self._manager.start_task(self.task)
         except IncorrectFormatError:
             print '[!] Error: bad URL format'
             self._manager.shutdown()
             
-    def onTaskDone(self, task):
+    def on_task_done(self, task):
         """
         Task completed callback
         """
@@ -348,15 +348,16 @@ class CmdLineManager:
             else:
                 action = 'Downloading '
             sys.stdout.write('\r%s: [' % action +'='*40 + '] %s     ' % \
-                formatSpeed(self._manager.getTask(task).speed))
+                format_speed(self._manager.get_task(task).speed))
             sys.stdout.write('\n')
             if self.kind == 'up':
-                print 'Url: %s' % self._manager.getTask(task).getUrl()
+                print 'Url: %s' % self._manager.get_task(task).get_url()
             else:
-                print 'File downloaded to %s' % self._manager.getTask(task).filename
+                print 'File downloaded to %s' % \
+                self._manager.get_task(task).filename
             self._manager.shutdown()
 
-    def onTaskProgress(self, task, progress):
+    def on_task_progress(self, task, progress):
         """
         Task progress callback
         """
@@ -366,17 +367,19 @@ class CmdLineManager:
             else:
                 action = 'Downloading '
             width = int(progress*40)
-            sys.stdout.write('\r%s: [' % action +'='*width + ' '*(40-width)+'] %s     ' % \
-                formatSpeed(self._manager.getTask(task).speed))
+            sys.stdout.write('\r%s: [' % action +'='*width)
+            sys.stdout.write(' '*(40-width))
+            sys.stdout.write('] %s     ' % \
+                format_speed(self._manager.get_task(task).speed))
             sys.stdout.flush()
 
-    def onTaskCancel(self, task):
+    def on_task_cancel(self, task):
         """
         Task canceled callback (implemented but never called since we do not allow task cancelation)
         """
         return
 
-    def onTaskError(self, task):
+    def on_task_error(self, task):
         """
         Task error callback.
 
@@ -387,14 +390,14 @@ class CmdLineManager:
             print '[!] Unable to upload'
             self._manager.shutdown()
             
-    def onTaskCreated(self, task):
+    def on_task_created(self, task):
         if self.kind == 'up':
             action = 'Uploading '
         else:
             action = 'Downloading '
         sys.stdout.write('\r%s: [' % action +' '*40 + '] %s     ' % \
-            formatSpeed(self._manager.getTask(task).speed))
+            format_speed(self._manager.get_task(task).speed))
         return
         
-    def onTaskStarted(self, task):
+    def on_task_started(self, task):
         return

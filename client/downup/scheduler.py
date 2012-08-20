@@ -27,13 +27,13 @@ class Worker(Thread):
     def run(self):
         while not self.__canceled:
             sys.stdout.flush()
-            task = self.sched.getPendingTask()
+            task = self.sched.get_pending_task()
             if task is not None:
-                if task.process(self.sched.acquireRepository()):
-                    self.sched.releaseRepository()
-                    self.sched.onWorkerDone(task)
+                if task.process(self.sched.acquire_repository()):
+                    self.sched.release_repository()
+                    self.sched.on_worker_done(task)
                 else:
-                    self.sched.onWorkerError(task)
+                    self.sched.on_worker_error(task)
             sleep(0.1)
 
 
@@ -51,31 +51,31 @@ class Scheduler(Thread):
             worker.cancel()
         self.__canceled = True
 
-    def getRandomRepository(self):
+    def get_random_repository(self):
         return
 		
-    def acquireRepository(self):
-        return self.__rep_manager.pickRandom()
+    def acquire_repository(self):
+        return self.__rep_manager.pick_random()
 		
-    def releaseRepository(self):
+    def release_repository(self):
         return
 
-    def queueTask(self, task):
+    def queue_task(self, task):
         self.tasks.append(task)
 		
-    def removeTask(self, task):
+    def remove_task(self, task):
         if task in self.tasks:
             self.tasks.remove(task)
 
-    def getPendingTask(self):
+    def get_pending_task(self):
         if len(self.tasks)>0:
             file_task = self.tasks[0]
             if file_task is None:
                 return None
             else:
-                if not file_task.isCompleted():
+                if not file_task.is_completed():
                     # get a chunk task from the file task
-                    chunk_task = file_task.getNextTask()
+                    chunk_task = file_task.get_next_task()
                     if chunk_task is not None:
                         # put the file task at the end of the list
                         self.tasks.append(self.tasks.pop(0))
@@ -86,13 +86,13 @@ class Scheduler(Thread):
         else:
             return None
 		
-    def onWorkerDone(self, chunk_task):
-        file_task = chunk_task.getParentFileTask()
-        file_task.onTaskDone(chunk_task)					
+    def on_worker_done(self, chunk_task):
+        file_task = chunk_task.get_parent_filetask()
+        file_task.on_task_done(chunk_task)					
 
-    def onWorkerError(self, chunk_task):
-        file_task = chunk_task.getParentFileTask()
-        file_task.onTaskError(chunk_task)
+    def on_worker_error(self, chunk_task):
+        file_task = chunk_task.get_parent_filetask()
+        file_task.on_task_error(chunk_task)
 
     def run(self):
         # start workers

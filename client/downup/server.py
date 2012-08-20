@@ -1,7 +1,9 @@
 import re
 import os
 import socket
-import urllib,httplib,urllib2
+import urllib
+import httplib
+import urllib2
 import urlparse
 from base64 import b64encode
 from core.exception import ServerIOError
@@ -16,13 +18,22 @@ class Server:
         self.scheme = url_info.scheme		
         self.server = url_info.netloc
         self.uri = url_info.path
-        self.url = urlparse.urlunparse((self.scheme,self.server,self.uri,'','',''))
+        self.url = urlparse.urlunparse(
+            (
+                self.scheme,
+                self.server,
+                self.uri,
+                '',
+                '',
+                ''
+            )
+        )
         self.posturl = self.uri
-        self.dlurl = '%s://%s%s?chunk=' % (self.scheme,self.server,self.uri)
-        self.puburl = '%s://%s%s?register=' % (self.scheme,self.server,self.uri)
-        self.statsurl = '%s://%s%s?stats' % (self.scheme,self.server,self.uri)
-        self.epurl = '%s://%s%s?endpoints' % (self.scheme,self.server,self.uri)
-        self.versionurl = '%s://%s%s?version' % (self.scheme,self.server,self.uri)
+        self.dlurl = '%s://%s%s?chunk=' % (self.scheme, self.server, self.uri)
+        self.puburl = '%s://%s%s?register=' % (self.scheme, self.server, self.uri)
+        self.statsurl = '%s://%s%s?stats' % (self.scheme, self.server, self.uri)
+        self.epurl = '%s://%s%s?endpoints' % (self.scheme, self.server, self.uri)
+        self.versionurl = '%s://%s%s?version' % (self.scheme, self.server, self.uri)
 		
     def upload(self, chunk):
         """
@@ -35,9 +46,9 @@ class Server:
             # Send request
             p = urllib.urlencode(params)
             r = httplib.HTTPConnection(self.server)
-            r.putrequest('POST',self.posturl)
-            r.putheader('Content-Type','application/x-www-form-urlencoded')
-            r.putheader('Content-Length',str(len(p)))
+            r.putrequest('POST', self.posturl)
+            r.putheader('Content-Type', 'application/x-www-form-urlencoded')
+            r.putheader('Content-Length', str(len(p)))
             r.endheaders()
             r.send(p)
             
@@ -46,7 +57,7 @@ class Server:
             if resp.status == 200:
                 # check if the returned ID is a MD5 hash
                 id = resp.read()
-                if re.match('[0-9a-fA-F]{32}',id):
+                if re.match('[0-9a-fA-F]{32}', id):
                     return id
                 else:
                     raise ServerIOError()
@@ -89,12 +100,12 @@ class Server:
             if resp:
                 return (resp.getcode() == 200)
             return False
-        except urllib2.HTTPError,e:
-            if e.getcode() == 404:
+        except urllib2.HTTPError,error:
+            if error.getcode() == 404:
                 return False
             raise ServerIOError()
 	
-    def listRegisteredEndpoints(self):
+    def list_registered_endpoints(self):
         """
         Retrieve a sample of published endpoints
         """
@@ -118,14 +129,14 @@ class Server:
             raise ServerIOError()
 	
     def alias(self, a):
-        return '%s?%s'%(self.url,a)
+        return '%s?%s'%(self.url, a)
 
     def check(self):
         try:
             data = b64encode(os.urandom(16))
             chunk_id = self.upload(data)
             output = self.download(chunk_id)
-            return output==data
+            return (output == data)
         except ServerIOError:
             return False		
 
@@ -140,7 +151,7 @@ class Server:
                 content = resp.read()
                 r = re.search('quota:([0-9]+),used:([0-9]+),chunks:([0-9]+),usage:([0-9]+)', content)
                 if r:
-                    return (int(r.group(1)),int(r.group(2)),int(r.group(3)),int(r.group(4)))
+                    return (int(r.group(1)), int(r.group(2)), int(r.group(3)), int(r.group(4)))
                 else:
                     return None
             else:

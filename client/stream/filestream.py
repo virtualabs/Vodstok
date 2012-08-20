@@ -65,13 +65,13 @@ class FileStream:
         """
         return self.__eof
 
-    def getKey(self):
+    def get_key(self):
         """
         Retrieve the generated AES key
         """
         return self.key
 
-    def getKeyHex(self):
+    def get_key_hex(self):
         """
         Retrieve the generated AES key as hex
         """
@@ -87,7 +87,7 @@ class FileStream:
         self.handle.seek(cur, SEEK_SET)
         return size
 
-    def getNbChunks(self):
+    def get_nb_chunks(self):
         """
         Retrieve file chunks number
         """
@@ -106,7 +106,7 @@ class FileStream:
         except IOError:
             raise FileStreamIOError()
 
-    def encryptChunk(self, chunk):
+    def encrypt_chunk(self, chunk):
         """
         Encrypt chunk
         """
@@ -114,14 +114,14 @@ class FileStream:
         enc = AES.new(self.key, AES.MODE_CBC)
         return b64encode(enc.encrypt(chunk_padded))
 
-    def decryptChunk(self, enc_chunk):
+    def decrypt_chunk(self, enc_chunk):
         """
         Decrypt chunk
         """
         dec = AES.new(self.key, AES.MODE_CBC)
         return self.__unpad(dec.decrypt(b64decode(enc_chunk)))
 
-    def readChunk(self, index=None):
+    def read_chunk(self, index=None):
         """
         Read chunk. If index is given, read the given chunk
         """
@@ -137,13 +137,13 @@ class FileStream:
                 chunk = self.handle.read(Settings.chunk_size)
                 if len(chunk)==0:
                     raise FileStreamEOF()
-                return self.encryptChunk(chunk)
+                return self.encrypt_chunk(chunk)
             except IOError:
                 raise FileStreamIOError()
         else:
             raise FileStreamEOF()
 
-    def writeChunk(self, content, index=None):
+    def write_chunk(self, content, index=None):
         """
         Write chunk to file. If index is given, write the index-th chunk to file.
         """
@@ -154,7 +154,7 @@ class FileStream:
             self.handle.seek(offset, SEEK_SET)
 		
         # decrypt chunk
-        decrypted_chunk = self.decryptChunk(content)
+        decrypted_chunk = self.decrypt_chunk(content)
         try:
             self.handle.write(decrypted_chunk)
         except IOError:
