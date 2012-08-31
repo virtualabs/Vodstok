@@ -123,6 +123,8 @@ class Scheduler(Thread):
                         self.tasks.append(self.tasks.pop(0))
                         self.__lock.release()
                         return chunk_task
+                    else:
+                        self.__lock.release()
                 else:
                     self.tasks.remove(file_task)
                     self.__lock.release()
