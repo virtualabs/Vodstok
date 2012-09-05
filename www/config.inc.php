@@ -10,5 +10,5 @@ DO NOT MODIFY OR REMOVE THE FOLLOWING LINES
 */
 
 define('QUOTA',QUOTA_MB*1024*1024);
-define('VERSION','1.2.3');
+define('VERSION','1.2.4');
 ?>
