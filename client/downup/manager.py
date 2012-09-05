@@ -2,7 +2,7 @@ import sys
 from time import time
 from core.helpers import format_speed
 from core.exception import IncorrectParameterError, IncorrectFormatError
-from downup.server import Server
+from core.server import Server
 from storage.user import User
 from downup.scheduler import Scheduler
 from downup.tasks import UpTask, DownTask, TaskStatus, TaskRef

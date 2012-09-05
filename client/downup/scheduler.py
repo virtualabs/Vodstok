@@ -5,8 +5,8 @@ Okay, maybe Twisted may help a bit but i'm not a twisted lover.
 """
 
 import sys
-from threading import Thread, Lock
 from time import sleep
+from threading import Thread, Lock
 from core.settings import Settings
 
 class Worker(Thread):
@@ -161,5 +161,5 @@ class Scheduler(Thread):
         # let workers do the job
         while len(self.tasks)>0 and not self.__canceled:
             # using pass is better than sleep =)
-            pass
+            sleep(0.1)
 			

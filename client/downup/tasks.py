@@ -32,7 +32,7 @@ from time import time
 from stream.filestream import MemoryStream, FileStream
 from random import shuffle
 from threading import Lock
-from downup.server import ServerIOError, Server
+from core.server import ServerIOError, Server
 from core.settings import Settings
 from core.exception import IncorrectParameterError, IncorrectFormatError
 
