@@ -1,8 +1,8 @@
 import sys
 from time import time
 from core.helpers import format_speed
-from core.exception import IncorrectParameterError, IncorrectFormatError
-from core.server import Server
+from core.exception import IncorrectParameterError, IncorrectFormatError,\
+    ServerIOError
 from storage.user import User
 from downup.scheduler import Scheduler
 from downup.tasks import UpTask, DownTask, TaskStatus, TaskRef
@@ -55,15 +55,17 @@ class ServersManager:
         """
         return self.__db.remove(url)
 
-    def add(self, url):
+    def add(self, server):
         """
-        Add a given server URL in user's servers list.
-        
-        This method checks the remote server BEFORE inserting it.
+        Add a given server in user's servers list.
         """
-        if Server(url).check():
-            return self.__db.add(url)
-        return False
+        return self.__db.add(server)
+
+    def has(self, server):
+        """
+        Check if server is already known
+        """
+        return self.__db.has(server)
 
     def pick_random(self):
         """
@@ -99,7 +101,8 @@ class DownUpManager:
         return DownUpManager.gDownUpManager
 
     def __init__(self):
-        self.__scheduler = Scheduler(ServersManager.get_instance())
+        self.__manager = ServersManager.get_instance()
+        self.__scheduler = Scheduler(self.__manager)
         self.__tasks = {}
         self.__running = False
         self.__listeners = []
@@ -186,6 +189,7 @@ class DownUpManager:
         """
         for listener in self.__listeners:
             listener.on_task_error(task)
+
 
     ## Task management
 
@@ -298,19 +302,44 @@ class DownUpManager:
     ## Events
 
     def on_task_done(self, task):
+        """
+        Task done event handler
+        """
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].status = TaskStatus.TASK_DONE
             self.notify_task_done(task.uuid)
 
     def on_task_error(self, task):
+        """
+        Task error event handler
+        """
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].status = TaskStatus.TASK_ERR
             self.notify_task_error(task.uuid)
 
     def on_task_progress(self, task, done, total):
+        """
+        Task progress event handler
+        """
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].update(done, total)
             self.notify_task_progress(task.uuid, float(done)/total)
+            
+    def on_server_discovered(self, server):
+        """
+        New server discovered event handler
+        """
+        if not self.__manager.has(server):
+            # check server and register it
+            # this would normally not cause an error
+            # but who knows =)
+            try:
+                server.get_version()
+                server.get_capacity()
+                self.__manager.add(server)
+            except ServerIOError:
+                pass
+                
 
 
 class CmdLineManager:
@@ -419,3 +448,4 @@ class CmdLineManager:
         
     def on_task_started(self, task):
         return
+
