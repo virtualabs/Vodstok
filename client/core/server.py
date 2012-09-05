@@ -13,6 +13,7 @@ import urllib2
 import urlparse
 from base64 import b64encode
 from core.exception import ServerIOError
+from core.helpers import normalize
 
 class Server:	
     """
@@ -22,6 +23,25 @@ class Server:
     """	
 	
     def __init__(self, url):
+        self.version = None
+        self.capacity = 0
+        self.usage = -1
+        self.active = True
+        self.set_url(normalize(url))
+
+    def set_version(self, version):
+        self.version = version
+    
+    def set_capacity(self, capacity):
+        self.capacity = capacity
+    
+    def set_active(self, active):
+        self.active = active
+        
+    def is_active(self):
+        return self.active
+
+    def set_url(self, url):
         url_info = urlparse.urlparse(url)
         self.scheme = url_info.scheme		
         self.server = url_info.netloc
@@ -157,7 +177,7 @@ class Server:
         except ServerIOError:
             return False		
 
-    def capacity(self):
+    def get_capacity(self):
         """
         Get endpoint statistics (quota, used space and number of chunks present)
         """
@@ -172,6 +192,8 @@ class Server:
                     content
                 )
                 if r:
+                    self.capacity = int(r.group(1))
+                    self.usage = int(r.group(4))
                     return (
                         int(r.group(1)),
                         int(r.group(2)),
@@ -183,14 +205,25 @@ class Server:
             else:
                 return None
         except urllib2.HTTPError:
-            return None
-        except httplib.InvalidURL:
-            return None
+            raise ServerIOError()
+        except urllib2.URLError:
+            raise ServerIOError()
+        except httplib.IncompleteRead:
+            raise ServerIOError()
+        except httplib.BadStatusLine:
+            raise ServerIOError()
+        except socket.timeout:
+            raise ServerIOError()
+        except socket.error:
+            raise ServerIOError()
 
     def __str__(self):
         return self.url
-        
-    def version(self):
+
+    def __eq__(self, other):
+        return (self.url==other.url)
+
+    def get_version(self):
         """
         Retrieve server version
         """
@@ -198,11 +231,33 @@ class Server:
             r = urllib2.Request(self.versionurl)
             resp = urllib2.urlopen(r)
             if resp:
-                return resp.read()
+                self.version = resp.read()
+                return self.version
             else:
                 return None
         except urllib2.HTTPError:
             return None
+        except urllib2.URLError:
+            return None
         except httplib.InvalidURL:
             return None
-            
+ 
+    def serialize(self):
+        return {
+            'url':self.url,
+            'version':self.version,
+            'active':self.active,
+            'capacity':self.capacity
+        }
+    
+    @staticmethod
+    def unserialize(serialized):
+        check_keys = ['url', 'version', 'active', 'capacity']
+        for key in check_keys:
+            if key not in serialized:
+                return None
+        server = Server(serialized['url'])
+        server.set_active(serialized['active'])
+        server.set_version(serialized['version'])
+        server.set_capacity(serialized['capacity'])
+        return server
