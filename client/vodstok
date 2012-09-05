@@ -155,7 +155,7 @@ class Vodstok:
         else:
             print '[!] No new servers found'
                     
-        print '[i] Propagating servers URLs ...'
+        print '[+] Propagating servers URLs ...'
         for _server in self._db.enum():
             endpoint = self._db.pick_random()
             try:
