@@ -46,6 +46,9 @@ class ServersDB:
         return len(self.servers)
     
     def has(self, server):
+        """
+        Check if a server is already known
+        """
         return (server in self.servers)
     
     def sync(self):
@@ -89,6 +92,14 @@ class ServersDB:
             self.sync()
             return True
         return False
+    
+    def count_active(self):
+        active = 0    
+        if self.servers is not None:
+            for server in self.servers:
+                if server.is_active():
+                    active += 1
+        return active
         
     def enum(self, active=True):
         """
@@ -114,8 +125,11 @@ class ServersDB:
         shuffle(active_servers)
         
         # return a random slice
-        if count>1:
-            return active_servers[:count]
+        if self.count_active()>0:
+            if count>1:
+                return active_servers[:count]
+            else:
+                return active_servers[0]
         else:
-            return active_servers[0]
+            return None
  
