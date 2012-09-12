@@ -113,7 +113,10 @@ class ServersDB:
         """
         if self.servers is not None:
             for server in self.servers:
-                if server.is_active():
+                if active:
+                    if server.is_active():
+                        yield server
+                else:
                     yield server
             
     def pick_random(self, count=1):
