@@ -229,25 +229,39 @@ function shouldRegister($ip, $endpoint) {
 
 
 function deleteOlderEndpoint() {
-	$dir = opendir(ENDPOINT_DIR);
-	$older = '';
-	$older_ts = time();		
-    $used = 0;
-    while (false !== ($entry = readdir($dir))) {
-            if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
-            {
-		$entry_ts = @filemtime(ENDPOINT_DIR.'/'.$entry);
-		if ($entry_ts < $older_ts)
-		{
-			$older_ts = $entry_ts;
-			$older = $entry;
-		}
+    if (is_dir(ENDPOINT_DIR))
+    {
+        if (is_link(ENDPOINT_DIR))
+            $dir = opendir(readlink(ENDPOINT_DIR));
+        else
+        	$dir = opendir(ENDPOINT_DIR);
+        
+        if ($dir !== false)
+        {
+        	$older = '';
+        	$older_ts = time();		
+            $used = 0;
+            while (false !== ($entry = readdir($dir))) {
+                    if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                    {
+        		$entry_ts = @filemtime(ENDPOINT_DIR.'/'.$entry);
+        		if ($entry_ts < $older_ts)
+        		{
+        			$older_ts = $entry_ts;
+        			$older = $entry;
+        		}
+                    }
             }
+        	closedir($dir);
+        
+        	/* unlink older file */
+        	@unlink(ENDPOINT_DIR.'/'.$older);
+            return;
+        }
     }
-	closedir($dir);
-
-	/* unlink older file */
-	@unlink(ENDPOINT_DIR.'/'.$older);
+    
+    /* An error occured */
+    error('ERR_BAD_DIRECTORY');
 }
 
 
@@ -258,27 +272,46 @@ function registerEndpoint($ip,$url)
 		error('ERR_CANNOT_REGISTER');	
 
 	/* Create endpoint file */
-	$f = fopen(ENDPOINT_DIR.'/'.$ip.'-'.md5($url),'wb');
-	fwrite($f, $url);
-	fclose($f);
-	
-	/* chmod */
-	@chmod(ENDPOINT_DIR.'/'.$ip.'-'.md5($url), 0777);
+    if (is_dir(CHUNK_DIR))
+    {
+    	$f = fopen(ENDPOINT_DIR.'/'.$ip.'-'.md5($url),'wb');
+    	fwrite($f, $url);
+    	fclose($f);
+
+    	/* chmod */
+    	@chmod(ENDPOINT_DIR.'/'.$ip.'-'.md5($url), 0777);
+    }
+    else
+        error('ERR_BAD_DIRECTORY');
 }
 
 function listRandomEndpoints()
 {
-	$dir = opendir(ENDPOINT_DIR);
-    $endpoints = array();
-    while (false !== ($entry = readdir($dir))) {
-            if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
-                array_push($endpoints, file_get_contents(ENDPOINT_DIR.'/'.$entry));
+    if (is_dir(ENDPOINT_DIR))
+    {
+        if (is_link(ENDPOINT_DIR))
+            $dir = opendir(readlink(ENDPOINT_DIR));
+        else
+        	$dir = opendir(ENDPOINT_DIR);
+        
+        if ($dir !== false)
+        {
+        	$dir = opendir(ENDPOINT_DIR);
+            $endpoints = array();
+            while (false !== ($entry = readdir($dir))) {
+                    if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                        array_push($endpoints, file_get_contents(ENDPOINT_DIR.'/'.$entry));
+            }
+        	closedir($dir);
+            
+            /* shuffle and keep only the 5 first entries */
+            shuffle($endpoints);
+            die(implode(',',array_slice($endpoints,0,5)));
+        }
     }
-	closedir($dir);
     
-    /* shuffle and keep only the 5 first entries */
-    shuffle($endpoints);
-    die(implode(',',array_slice($endpoints,0,5)));
+    /* An error occurred */
+    error('ERR_BAD_DIRECTORY');
 }
 
 ?>
