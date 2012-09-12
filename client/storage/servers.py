@@ -29,11 +29,15 @@ class ServersDB:
         if os.path.isdir(homedir):
             if os.path.isfile(self._db):
                 database = open(self._db, 'rb')
-                version, servers = pickle.load(database)
-                self.servers = []
-                for server in servers:
-                    self.servers.append(Server.unserialize(server))
-                database.close()
+                try:
+                    version, servers = pickle.load(database)
+                    self.servers = []
+                    for server in servers:
+                        self.servers.append(Server.unserialize(server))
+                    database.close()
+                except:
+                    self.servers = []
+                    self.sync()
             else:
                 self.servers = []
                 self.sync()
