@@ -11,39 +11,65 @@ function error($reason) {
 
 function getFreeSpace() 
 {
-	$dir = opendir(CHUNK_DIR);
-	$used = 0;
-	while (false !== ($entry = readdir($dir))) {
-		if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
-			$used += @filesize(CHUNK_DIR.'/'.$entry);
-	}
-	$left = QUOTA - $used;
-    if ($left < 0)
-        $left = 0;
-	closedir($dir);
-	return $left;
+    if (is_dir(CHUNK_DIR))
+    {
+        if (is_link(CHUNK_DIR))
+            $dir = opendir(readlink(CHUNK_DIR));
+        else
+        	$dir = opendir(CHUNK_DIR);
+        if ($dir !== FALSE)
+        {
+        	$used = 0;
+        	while (false !== ($entry = readdir($dir))) {
+        		if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+        			$used += @filesize(CHUNK_DIR.'/'.$entry);
+        	}
+        	$left = QUOTA - $used;
+            if ($left < 0)
+                $left = 0;
+        	closedir($dir);
+            return $left;
+        }
+    }
+
+    /* if an error occurred */
+    error('ERR_BAD_DIRECTORY');
 }
 
 function deleteOlderChunk() {
-	$dir = opendir(CHUNK_DIR);
-	$older = '';
-	$older_ts = time();		
-        $used = 0;
-        while (false !== ($entry = readdir($dir))) {
-                if (($entry!='.') && ($entry!='..') && ($entry!='.htaccess') && !is_dir($entry))
-                {
-			$entry_ts = @filemtime(CHUNK_DIR.'/'.$entry);
-			if ($entry_ts < $older_ts)
-			{
-				$older_ts = $entry_ts;
-				$older = $entry;
-			}
+    if (is_dir(CHUNK_DIR))
+    {
+        if (is_link(CHUNK_DIR))
+            $dir = opendir(readlink(CHUNK_DIR));
+        else
+        	$dir = opendir(CHUNK_DIR);
+            
+        if ($dir !== false)
+        {
+        	$older = '';
+        	$older_ts = time();		
+                $used = 0;
+                while (false !== ($entry = readdir($dir))) {
+                        if (($entry!='.') && ($entry!='..') && ($entry!='.htaccess') && !is_dir($entry))
+                        {
+        			$entry_ts = @filemtime(CHUNK_DIR.'/'.$entry);
+        			if ($entry_ts < $older_ts)
+        			{
+        				$older_ts = $entry_ts;
+        				$older = $entry;
+        			}
+                        }
                 }
+        	closedir($dir);
+        
+        	/* unlink older file */
+        	@unlink(CHUNK_DIR.'/'.$older);
+            return;
         }
-	closedir($dir);
-
-	/* unlink older file */
-	@unlink(CHUNK_DIR.'/'.$older);
+    }
+    
+    /* An error occurred */
+    error('ERR_BAD_DIRECTORY: GetFreeSpace');
 }
 
 function clean($space)
@@ -52,8 +78,17 @@ function clean($space)
 	if ($space>QUOTA)
 		error('ERR_LOW_QUOTA');
 
-	while(getFreeSpace()<$space)
-		deleteOlderChunk();
+    /* Get free space and clean to make some space */
+	$free_space = getFreeSpace();
+    do {
+        /* If ok, remove an older chunk */
+        deleteOlderChunk();
+        
+        /* Get freespace */
+        $free_space = getFreeSpace();
+        
+    } while ($free_space < $space);
+		
 }
 
 function dlChunk($id)
@@ -104,63 +139,92 @@ function dispStats()
 {
 	$quota = QUOTA;
 	$usage = array();
-	$dir = opendir(CHUNK_DIR);
-    $chunks = 0;
-    $min=time();
     
-    while (false !== ($entry = readdir($dir))) {
-        if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+    if (is_dir(CHUNK_DIR))
+    {
+        if (is_link(CHUNK_DIR))
+            $dir = opendir(readlink(CHUNK_DIR));
+        else
+        	$dir = opendir(CHUNK_DIR);
+            
+        if ($dir !== false)
         {
-            $entry_creation_date = @filemtime(CHUNK_DIR.'/'.$entry);
-            if ($entry_creation_date<$min)
-                $min = $entry_creation_date;
-            $chunks++;
+            $chunks = 0;
+            $min=time();
+            
+            while (false !== ($entry = readdir($dir))) {
+                if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                {
+                    $entry_creation_date = @filemtime(CHUNK_DIR.'/'.$entry);
+                    if ($entry_creation_date<$min)
+                        $min = $entry_creation_date;
+                    $chunks++;
+                }
+            }
+            if ((time()-$min)>0)
+                $usage_med = floor(($chunks*60)/(time()-$min));
+            else
+                $usage_med = 0;
+        
+        	$used = $chunks*32768;
+        	if ($used>$quota)
+        	   $used = $quota;
+        	die('quota:'.$quota.',used:'.$used.',chunks:'.$chunks.',usage:'.$usage_med);
         }
     }
-    if ((time()-$min)>0)
-        $usage_med = floor(($chunks*60)/(time()-$min));
-    else
-        $usage_med = 0;
-
-	$used = $chunks*32768;
-	if ($used>$quota)
-	   $used = $quota;
-	die('quota:'.$quota.',used:'.$used.',chunks:'.$chunks.',usage:'.$usage_med);
+    
+    /* An error occured */
+    error('ERR_BAD_DIRECTORY');
+    
 }
 
 /** Endpoints related stuff **/
 
 
 function shouldRegister($ip, $endpoint) {
-	$dir = opendir(ENDPOINT_DIR);
-	$older = '';
-	$limit = time()-3600;		
-    $used = 0;
-    $hash = md5($endpoint);
-    while (false !== ($entry = readdir($dir))) {
-            if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
-            {
-            	$meta = @explode('-',$entry);
-            	$ip_ = $meta[0];
-            	$ep_ = $meta[1];
-            	if ($ip_===$ip)
-            	{
-					$entry_ts = @filemtime(ENDPOINT_DIR.'/'.$entry);
-					if ($entry_ts >= $limit)
+    if (is_dir(ENDPOINT_DIR))
+    {
+        if (is_link(ENDPOINT_DIR))
+            $dir = opendir(readlink(ENDPOINT_DIR));
+        else
+        	$dir = opendir(ENDPOINT_DIR);
+        
+        if ($dir !== false)
+        {
+        	$older = '';
+        	$limit = time()-3600;		
+            $used = 0;
+            $hash = md5($endpoint);
+            while (false !== ($entry = readdir($dir))) {
+                    if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
                     {
-                        closedir($dir);
-						return false;
+                    	$meta = @explode('-',$entry);
+                    	$ip_ = $meta[0];
+                    	$ep_ = $meta[1];
+                    	if ($ip_===$ip)
+                    	{
+        					$entry_ts = @filemtime(ENDPOINT_DIR.'/'.$entry);
+        					if ($entry_ts >= $limit)
+                            {
+                                closedir($dir);
+        						return false;
+                            }
+        				}
+        				if ($ep_==$hash)
+                        {
+                            closedir($dir);
+                            return false;
+                        }
                     }
-				}
-				if ($ep_==$hash)
-                {
-                    closedir($dir);
-                    return false;
-                }
             }
+        	closedir($dir);
+        	return true;
+        }
     }
-	closedir($dir);
-	return true;
+    
+    /* An error occurred */
+    error('ERR_BAD_DIRECTORY');
+    return false;
 }
 
 
