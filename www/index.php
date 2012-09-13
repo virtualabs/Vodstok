@@ -23,9 +23,9 @@ else if (isset($_GET['chunk']))
 else if (isset($_POST['chunk']))
 	createChunk($_POST['chunk']);
 else if (isset($_GET['endpoints']))
-    listRandomEndpoints();    
+    listRandomServers();    
 else if (isset($_GET['register']))
-    registerEndpoint($_SERVER['REMOTE_ADDR'],$_GET['register']);
+    registerServer($_SERVER['REMOTE_ADDR'],$_GET['register']);
 else
 {
 ?>
