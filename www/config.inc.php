@@ -2,8 +2,8 @@
 
 define('QUOTA_MB', 100);
 define('CHUNK_DIR','chunks');
-define('ENDPOINT_DIR','endpoints');
-define('MAX_ENDPOINTS',50);
+define('SERVERS_DIR','endpoints');
+define('MAX_SERVERS',50);
 
 /*
 DO NOT MODIFY OR REMOVE THE FOLLOWING LINES
