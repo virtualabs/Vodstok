@@ -170,6 +170,8 @@ class Server:
 
     def check(self):
         try:
+            self.get_capacity()
+            self.get_version()
             data = b64encode(os.urandom(16))
             chunk_id = self.upload(data)
             output = self.download(chunk_id)
