@@ -4,6 +4,19 @@ require_once('config.inc.php');
 
 /** Helpers **/
 
+/**
+ * is_meta($entry_name)
+ *
+ * Check if an entry name corresponds to one of our metadata files
+ */
+ 
+function is_meta($entry_name)
+{
+    if (strlen($entry_name)>0)
+        return ($entry_name[0]=='.');
+    else
+        return false;
+} 
 
 /**
  * test_write($dir)
@@ -200,7 +213,7 @@ function deleteOldestChunk() {
         	$older_ts = time();
                 $used = 0;
                 while (false !== ($entry = readdir($dir))) {
-                    if (($entry!='.') && ($entry!='..') && ($entry!='.htaccess') && ($entry!='.size') && !is_dir($entry))
+                    if (!is_meta($entry) && !is_dir($entry))
                     {
             			$entry_ts = @filemtime(CHUNK_DIR.'/'.$entry);
             			if ($entry_ts < $older_ts)
@@ -348,7 +361,7 @@ function dispStats()
             $min=time();
             
             while (false !== ($entry = readdir($dir))) {
-                if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                if (!is_meta($entry) && !is_dir($entry))
                 {
                     $entry_creation_date = @filemtime(CHUNK_DIR.'/'.$entry);
                     if ($entry_creation_date<$min)
@@ -379,7 +392,13 @@ function dispStats()
 /** Endpoints related stuff **/
 
 
-function shouldRegister($ip, $endpoint) {
+/**
+ * shouldRegister($ip, $server)
+ *
+ * Check if server registration is required.
+ */
+
+function shouldRegister($ip, $server) {
     if (is_dir(SERVERS_DIR))
     {
         if (is_link(SERVERS_DIR))
@@ -392,9 +411,9 @@ function shouldRegister($ip, $endpoint) {
         	$older = '';
         	$limit = time()-3600;		
             $used = 0;
-            $hash = md5($endpoint);
+            $hash = md5($server);
             while (false !== ($entry = readdir($dir))) {
-                    if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                    if (!is_meta($entry) && !is_dir($entry))
                     {
                     	$meta = @explode('-',$entry);
                     	$ip_ = $meta[0];
@@ -426,6 +445,12 @@ function shouldRegister($ip, $endpoint) {
 }
 
 
+/**
+ * deleteOldestServer()
+ * 
+ * Delete the oldest server from the directory
+ */
+
 function deleteOldestServer() {
     if (is_dir(SERVERS_DIR))
     {
@@ -440,7 +465,7 @@ function deleteOldestServer() {
         	$older_ts = time();		
             $used = 0;
             while (false !== ($entry = readdir($dir))) {
-                    if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                    if (!is_meta($entry) && !is_dir($entry))
                     {
         		$entry_ts = @filemtime(SERVERS_DIR.'/'.$entry);
         		if ($entry_ts < $older_ts)
@@ -463,7 +488,14 @@ function deleteOldestServer() {
 }
 
 
-function registerServer($ip,$url)
+/**
+ * registerServer($ip, $url)
+ * 
+ * Registers a server into the directory. $ip is required
+ * to limit flooding.
+ */
+
+function registerServer($ip, $url)
 {
 	/* Check last endpoint registration for this IP address */
 	if (!shouldRegister($ip,$url))
@@ -483,6 +515,13 @@ function registerServer($ip,$url)
         error('ERR_BAD_DIRECTORY');
 }
 
+
+/**
+ * listRandomServers()
+ *
+ * Returns a list of <=5 servers
+ */
+
 function listRandomServers()
 {
     if (is_dir(SERVERS_DIR))
@@ -497,7 +536,7 @@ function listRandomServers()
         	$dir = opendir(SERVERS_DIR);
             $servers = array();
             while (false !== ($entry = readdir($dir))) {
-                    if (($entry!='.')&&($entry!='..')&&($entry!='.htaccess'))
+                    if (!is_meta($entry) && !is_dir($entry))
                         array_push($servers, file_get_contents(SERVERS_DIR.'/'.$entry));
             }
         	closedir($dir);
