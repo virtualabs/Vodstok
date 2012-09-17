@@ -111,10 +111,13 @@ class Vodstok:
         
         # Step 0: checking current servers
         print '[+] Checking current servers ...'
-        for server in self._db.enum():
+        for server in self._db.enum(active=False):
             if not server.check():
-                print '[!] Server %s is no more working, set inactive'
+                print '[!] Server %s is no more working, set inactive' % server.url
                 server.set_active(False)
+                self._db.update(server)
+            else:
+                server.set_active(True)
                 self._db.update(server)
         
         # Step 1: get a pool of 10 random active servers
@@ -139,9 +142,9 @@ class Vodstok:
             for server in pot_servers:
                 try:
                     #print '[+] Registering server %s' % server
-                    version = server.get_version()
+                    #version = server.get_version()
                     #print ' + remote server version is %s' % version
-                    server.get_capacity()
+                    #server.get_capacity()
                     #print ' + remote server shares %s' % convert_bytes(server.capacity)
                     if server.check():
                         server.set_version(version)
