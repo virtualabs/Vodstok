@@ -321,7 +321,7 @@ class DownloadFileTask(AbstractTask):
         """
         Called if an error occured while processing a task
         """
-        #print '[!] Error during task #%d' % task.getIndex()
+        # TODO : handle recurrent download problems.
         self.mark_as_left(task)
         return
 		

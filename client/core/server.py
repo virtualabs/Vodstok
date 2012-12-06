@@ -85,6 +85,7 @@ class Server:
             r.putrequest('POST', self.posturl)
             r.putheader('Content-Type', 'application/x-www-form-urlencoded')
             r.putheader('Content-Length', str(len(p)))
+            r.putheader('User-Agent','vodstok')
             r.endheaders()
             r.send(p)
             

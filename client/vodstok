@@ -126,11 +126,14 @@ class Vodstok:
         dictionaries = self._db.pick_random(10)
         if len(dictionaries)>0:
             for dictionary in dictionaries:
-                servers = dictionary.list_registered_endpoints()
-                if servers is not None:
-                    for server in servers:
-                        if (not self._db.has(server)) and (not server in pot_servers):
-                            pot_servers.append(server)
+                try:
+                    servers = dictionary.list_registered_endpoints()
+                    if servers is not None:
+                        for server in servers:
+                            if (not self._db.has(server)) and (not server in pot_servers):
+                                pot_servers.append(server)
+                except ServerIOError:
+                    pass
         else:
             print "[!] No server registered. Use 'add' to register one."
             return
