@@ -13,3 +13,9 @@ if (!test_write(ENDPOINT_DIR))
     echo('KO<br/>');
 else
     echo('OK<br/>');
+    
+echo('Testing root dir ...');
+if (!test_write('.'))
+    echo('KO<br/>');
+else
+    echo('OK<br/>');

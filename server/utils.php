@@ -1,8 +1,24 @@
 <?php
 
-require_once('config.inc.php');
+if (file_exists('config.inc.php'))
+{
+    define('INSTALLED',1);
+    require_once('config.inc.php');
+}
 
 /** Helpers **/
+
+/**
+ * is_largefs_compliant()
+ *
+ * Check if bcmath or gmp is present
+ */
+ 
+function is_largefs_compliant()
+{
+    return (extension_loaded('bcmath') || extension_loaded('gmp'));
+}
+
 
 /**
  * is_meta($entry_name)
@@ -17,6 +33,66 @@ function is_meta($entry_name)
     else
         return false;
 } 
+
+
+/**
+ * add
+ * 
+ * bcmath/gmp compatible. Adds two big integers.
+ */
+ 
+function add($a, $b)
+{
+    /* If bcmath */
+    if (extension_loaded('bcmath'))
+        return bcadd($a,$b);
+    else if (extension_loaded('gmp'))
+        return gmp_add($a, $b);
+    else
+        return ($a+$b);
+}
+
+
+/**
+ * sub
+ * 
+ * bcmath/gmp compatible. Subs two big integers.
+ */
+
+ function sub($a, $b)
+{
+    /* If bcmath */
+    if (extension_loaded('bcmath'))
+        return bcsub($a,$b);
+    else if (extension_loaded('gmp'))
+        return gmp_sub($a, $b);
+    else
+        return ($a-$b);
+}
+
+
+/**
+ * comp
+ * 
+ * bcmath/gmp compatible. Compares two big integers.
+ */
+ 
+function comp($a, $b)
+{
+    /* If bcmath */
+    if (extension_loaded('bcmath'))
+        return bccomp($a,$b);
+    else if (extension_loaded('gmp'))
+        return gmp_cmp($a, $b);
+    else
+    {
+        if ($a<$b)
+            return -1;
+        else if ($a>$b)
+            return 1;
+        return 0;
+    }
+}
 
 /**
  * test_write($dir)
@@ -183,7 +259,7 @@ function setConsumedSpace($space_left) {
  
 function getFreeSpace()
 {
-    $free_space = QUOTA - getConsumedSpace();
+    $free_space = sub(QUOTA,getConsumedSpace());
     if ($free_space < 0)
         $free_space = 0;
     return $free_space;
@@ -260,7 +336,7 @@ function clean($space)
 
     /* Get free space and clean to make some space */
     $free_space = getFreeSpace();
-    if ($free_space < $space)
+    if (comp($free_space,$space)<0)
     {
         do {
             /* If ok, remove the oldest chunk */
@@ -268,7 +344,7 @@ function clean($space)
             
             /* Get freespace */
             $free_space = getFreeSpace();
-        } while ($free_space < $space);
+        } while (comp($free_space,$space)<0);
     }		
 }
 
@@ -329,7 +405,7 @@ function createChunk($data)
         
         /* Update consumed size */
         $consumed = getConsumedSpace();
-        setConsumedSpace($consumed+strlen($data));
+        setConsumedSpace(add($consumed,strlen($data)));
 
 		/* Chmod */
 		chmod(CHUNK_DIR.'/'.$id, 0777);

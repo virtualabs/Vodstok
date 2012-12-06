@@ -1,3 +1,0 @@
-1. Modify config.inc.php to set your quota (QUOTA_MB) in Mbytes
-2. Chmod 770 the "chunks" directory
-3. That's all folks ! use the client to upload/download files !

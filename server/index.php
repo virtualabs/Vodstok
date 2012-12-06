@@ -2,6 +2,12 @@
 
 require_once('utils.php');
 
+if (!defined('INSTALLED'))
+{
+    header('Location: install.php');
+    die('please install');
+}
+
 /* Check if query string match an ID */
 if (preg_match('/^[a-f0-9]{32}-[a-f0-9]{32}$/i',$_SERVER['QUERY_STRING']))
 {
