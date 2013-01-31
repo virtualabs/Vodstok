@@ -13,6 +13,7 @@ from Crypto.Cipher import AES
 from base64 import b64encode, b64decode
 from core.settings import Settings
 from StringIO import StringIO
+from hashlib import sha512
 
 
 
@@ -62,6 +63,7 @@ class FileStream:
             self.key = urandom(16)
         else:
             self.key = key
+        self.iv = sha512(self.key).digest()[:16]
         self.__eof = False
 
     def eof(self):
@@ -116,14 +118,14 @@ class FileStream:
         Encrypt chunk
         """
         chunk_padded = pad(chunk)
-        enc = AES.new(self.key, AES.MODE_CBC)
+        enc = AES.new(self.key, AES.MODE_CBC, self.iv)
         return b64encode(enc.encrypt(chunk_padded))
 
     def decrypt_chunk(self, enc_chunk):
         """
         Decrypt chunk
         """
-        dec = AES.new(self.key, AES.MODE_CBC)
+        dec = AES.new(self.key, AES.MODE_CBC, self.iv)
         return unpad(dec.decrypt(b64decode(enc_chunk)))
 
     def read_chunk(self, index=None):
