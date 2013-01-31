@@ -91,9 +91,9 @@ class Vodstok:
         Publish a given server on every other servers
         """
         for _server in self._db.enum():
-            if _server.url != server.url:
+            if _server.url != server:
                 sys.stdout.write(' + publishing on %s ... ' % _server.url)
-                if _server.publish(server.url):
+                if _server.publish(server):
                     sys.stdout.write('ok\n')
                 else:
                     sys.stdout.write('ko\n')
@@ -233,7 +233,7 @@ if __name__ == '__main__':
                 a.list_servers()
             elif args[0] == 'announce':
                 print '[i] Announcing server ...'
-                a.publish_server(args[0])
+                a.publish_server(args[1])
         else:
             if args[0] == 'update':
                 #print '[i] Updating servers ...'
