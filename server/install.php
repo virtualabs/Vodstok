@@ -16,7 +16,7 @@ function create_config_file($quota)
         $content = "<?php
 define('QUOTA_MB',".(int)($_POST['quota']).");"."
 define('CHUNK_DIR','chunks');
-define('ENDPOINT_DIR','endpoints');
+define('SERVERS_DIR','endpoints');
 define('MAX_SERVERS',50);
 /*
 DO NOT MODIFY OR REMOVE THE FOLLOWING LINES
