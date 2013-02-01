@@ -9,11 +9,12 @@ def normalize(url):
     Clean an url in order to add it to the servers list
     """
     url_info = urlparse(url)
+    scheme = url_info.scheme
     server = url_info.netloc
     uri = url_info.path
     while '//' in uri:
         uri = uri.replace('//', '/')
-    url = 'http://%s%s' % (server, uri)
+    url = '%s://%s%s' % (scheme, server, uri)
     if url[-1] != '/':
         url += '/'
     return url
