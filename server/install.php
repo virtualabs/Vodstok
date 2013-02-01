@@ -1,12 +1,33 @@
 <?php
+
+/**
+ * Constants
+ *
+ * These constants must be defined here because no config.inc.php is available.
+ */
+
 define('CHUNK_DIR', 'chunks');
 define('ENDPOINT_DIR','endpoints');
 @require_once('utils.php');
+
+/* Error counter */
+$errors = 0;
+
+/** 
+ * Check if an install is required
+ *
+ * This check returns True only if the 'config.inc.php' already exists.
+ */
 
 function requires_install()
 {
     return (!file_exists('config.inc.php'));
 }
+
+
+/**
+ * Create the 'config.inc.php' file
+ */
 
 function create_config_file($quota)
 {
@@ -27,27 +48,41 @@ define('VERSION','1.2.4');
 ";
         fwrite($f, $content);
         fclose($f);
+
+        /* Success */
         return TRUE;
     }
     else
+        /* Error */
         return false;
 }
 
-/* If config requires, launch the install process */
+
+/**
+ * Check install
+ */
+
 if (!requires_install())
 {
+    /* If install is ok, then redirect to the index page. */
     header('Location: '.dirname($_SERVER['REQUEST_URI']));
     die('install already done');
 }
 
+/* Check if a quota is set */
 if (isset($_POST['quota']))
 {
+    /* Quota set, create config file and redirect to the index page */
     if (create_config_file($_POST['quota']))
     {
         header('Location: '.dirname($_SERVER['REQUEST_URI']));
         die('install ok');
     }
+    else
+        $errors++;
 }
+
+/* Displays the page */
 
 ?>
 <!DOCTYPE html>
@@ -73,8 +108,11 @@ if (isset($_POST['quota']))
             <div class="important">Directories write access status:</div>
             <div id="tests">
                 <?php
-                $errors = 0;
                 
+                /*
+                 *  Directory access-rights checks
+                 */
+
                 /* check current dir access */
                 echo('<br/>Current directory');
                 if (test_write('.'))

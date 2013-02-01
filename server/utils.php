@@ -1,5 +1,9 @@
 <?php
 
+/*
+ * Check install
+ */
+
 if (file_exists('config.inc.php'))
 {
     define('INSTALLED',1);

@@ -1,16 +1,27 @@
 <?php
 
+/**
+ * Includes
+ */
+
 require_once('utils.php');
 
+/**
+ * Main dispatcher
+ */
+
+/* Is Vodstok installed ? */
 if (!defined('INSTALLED'))
 {
+    /* Nope, let's install ! */
     header('Location: install.php');
     die('please install');
 }
 
-/* Check if query string match an ID */
+/* Check if query string matches an ID */
 if (preg_match('/^[a-f0-9]{32}-[a-f0-9]{32}$/i',$_SERVER['QUERY_STRING']))
 {
+    /* Uses a dedicated MIME type, for further usages (app, browser ext., ...) */
     header('Content-Type: application/x-vodstok');
     $url = 'http';
     if ($_SERVER['HTTPS']=='on')
@@ -20,20 +31,27 @@ if (preg_match('/^[a-f0-9]{32}-[a-f0-9]{32}$/i',$_SERVER['QUERY_STRING']))
     $url .= $_SERVER['REQUEST_URI'];
     die($url);
 }
+/* Version request */
 else if (isset($_GET['version']))
     die(VERSION);
+/* Statistics request */
 else if (isset($_GET['stats']))
 	dispStats();
+/* Chunk retrieval request */
 else if (isset($_GET['chunk']))
 	dlChunk($_GET['chunk']);
+/* Chunk upload request */
 else if (isset($_POST['chunk']))
 	createChunk($_POST['chunk']);
+/* Servers (endpoints) dictionnary request */
 else if (isset($_GET['endpoints']))
-    listRandomServers();    
+    listRandomServers();
+/* Server announcement request */
 else if (isset($_GET['register']))
     registerServer($_SERVER['REMOTE_ADDR'],$_GET['register']);
 else
 {
+/* Main index page */
 ?>
 <html>
 <head>
