@@ -113,7 +113,7 @@ class Vodstok:
         print '[+] Checking current servers ...'
         for server in self._db.enum(active=False):
             if not server.check():
-                print '[!] Server %s is no more working, set inactive' % server.url
+                print '[!] Server %s is not working anymore, set inactive' % server.url
                 server.set_active(False)
                 self._db.update(server)
             else:
