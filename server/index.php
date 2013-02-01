@@ -123,7 +123,7 @@ Many operations can be performed with the provided client:
 - download of a file thanks to a specific URL
 </pre>
 <br/><br/>
-<b><a href="https://github.com/virtualabs/Vodstok/zipball/v1.2.0">Download Vodstok !</a></b>
+<b><a href="https://github.com/virtualabs/Vodstok/">Download Vodstok !</a></b>
 </body>
 </html>
 
