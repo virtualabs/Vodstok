@@ -1,0 +1,8 @@
+# Compiled Python
+*.pyc
+
+# Vim swap files
+*.*~
+
+# dot files
+.*
