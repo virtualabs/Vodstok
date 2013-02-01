@@ -469,7 +469,7 @@ class DownTask:
         #self.__key = self.__key.decode('hex')
         self.__path = r.path
         try:
-            self.__key, self.__chunk_id = r.query.split('-')
+            self.__key, self.__chunk_id = r.fragment.split('-')
             self.__key = self.__key.decode('hex')
             self.__file = MemoryStream('', key=self.__key)
             self.__alias = '%s://%s%s' % (
@@ -667,7 +667,7 @@ class UpTask:
             # split the alias
             p = urlparse.urlparse(self.__alias)
             k = self.__key.encode('hex')
-            return '%s://%s%s?%s-%s' % (p.scheme, p.netloc, p.path, k, p.query)
+            return '%s://%s%s#%s-%s' % (p.scheme, p.netloc, p.path, k, p.query)
         else:
             return None
 		

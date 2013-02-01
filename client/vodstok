@@ -180,7 +180,7 @@ class Vodstok:
         """
         Check wether the provided URL is a Vodstok URL or not
         """
-        return (re.match('^(http|https)://([^\?]+)\?(.*)$', url) is not None)
+        return (re.match('^(http|https)://([^#]+)#(.*)$', url) is not None)
 
     def get_global_capacity(self):
         """
