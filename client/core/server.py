@@ -28,6 +28,7 @@ class Server:
         self.usage = -1
         self.active = True
         self.set_url(normalize(url))
+        self.headers = { "Accept" : "*/*" }
 
     def set_version(self, version):
         self.version = version
@@ -86,6 +87,7 @@ class Server:
             r.putheader('Content-Type', 'application/x-www-form-urlencoded')
             r.putheader('Content-Length', str(len(p)))
             r.putheader('User-Agent','vodstok')
+            r.putheader('Accept','*/*')
             r.endheaders()
             r.send(p)
             
@@ -109,7 +111,7 @@ class Server:
         (returned by the upload method above)
         """
         try:
-            r = urllib2.Request(self.dlurl+id)
+            r = urllib2.Request(self.dlurl+id, headers=self.headers)
             resp = urllib2.urlopen(r)
             if resp:
                 return resp.read()
@@ -133,7 +135,7 @@ class Server:
         Publish a given endpoint on this endpoint
         """
         try:
-            r = urllib2.Request(self.puburl+urllib.quote(endpoint_url))
+            r = urllib2.Request(self.puburl+urllib.quote(endpoint_url), headers=self.headers)
             resp =  urllib2.urlopen(r)
             if resp:
                 return (resp.getcode() == 200)
@@ -148,7 +150,7 @@ class Server:
         Retrieve a sample of published endpoints
         """
         try:
-            r = urllib2.Request(self.epurl)
+            r = urllib2.Request(self.epurl, headers=self.headers)
             resp =  urllib2.urlopen(r)
             if resp:
                 return [Server(url) for url in resp.read().split(',')]
@@ -185,7 +187,7 @@ class Server:
         Get endpoint statistics (quota, used space and number of chunks present)
         """
         try:
-            r = urllib2.Request(self.statsurl)
+            r = urllib2.Request(self.statsurl, headers=self.headers)
             resp = urllib2.urlopen(r)
             if resp:
                 content = resp.read()
@@ -231,7 +233,7 @@ class Server:
         Retrieve server version
         """
         try:
-            r = urllib2.Request(self.versionurl)
+            r = urllib2.Request(self.versionurl, headers=self.headers)
             resp = urllib2.urlopen(r)
             if resp:
                 self.version = resp.read()
