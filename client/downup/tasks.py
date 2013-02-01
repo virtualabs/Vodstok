@@ -534,7 +534,7 @@ class DownTask:
             filename, self.__chunks = self.__file.read().split('|')
             if filename == 'metadata':
                 self.__file = MemoryStream('', key=self.__key)
-                self.__task = DownloadFileTask(self, self.__chunks, self.__file)
+                self.__task = DownloadFileTask(self, self.__chunks.split(','), self.__file)
             else:
                 self.__state = DownTask.RECVING
                 self.filename = os.path.join(self.__dst_prefix, filename)
@@ -637,7 +637,8 @@ class UpTask:
         if self.__state == UpTask.SENDING:
             meta = '%s|%s' % (self.__filename, ','.join(task.get_aliases()))
             if len(meta) > Settings.chunk_size:
-                meta = 'metadata|%s' % (','.join(task.get_aliases()))
+                meta = '%s|%s' % (self.__filename, ','.join(task.get_aliases()))
+                self.__filename = 'metadata'
                 if self.__manager is not None:
                     self.__task = UploadFileTask(
                         self, MemoryStream(meta, key=self.__key)
