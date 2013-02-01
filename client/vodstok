@@ -144,11 +144,7 @@ class Vodstok:
             print '[+] Registering servers ... '
             for server in pot_servers:
                 try:
-                    #print '[+] Registering server %s' % server
-                    #version = server.get_version()
-                    #print ' + remote server version is %s' % version
-                    #server.get_capacity()
-                    #print ' + remote server shares %s' % convert_bytes(server.capacity)
+                    version = server.get_version()
                     if server.check():
                         server.set_version(version)
                         server.set_active(True)
