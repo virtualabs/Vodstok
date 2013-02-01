@@ -28,13 +28,13 @@ data to store, whatever this data is.
 You only have to own a web server, with PHP version 4.X or 5.X.
 Drop the content of the www/ directory in a directory called
 "vodstok" for instance, and make sure the chunks/ directory is
-not readable on your server. Modify config.inc.php to specify
-the maximum amount of disk space you allow to Vodstok (in MB).
+not readable on your server. Browse your remote folder and set
+up vodstok.
 
 Get the vodstok client (located in the client/ directory) and 
 declare your endpoint:
 
-$ ./vodstok -a http://your.web.server/vodstok/
+$ ./vodstok add http://your.web.server/vodstok/
 
 Once done, you can upload and download files to your server, and
 share its URL. Other people using vodstok will be able to register
@@ -44,15 +44,8 @@ been impacted by the shutdown, the actual vodstok client providing
 no redundancy at all).
 
 It is also strongly recommended to publish your endpoint (through
-the -p option) and to update the endpoints list on a regular basis
-(thanks to the -u option).
-
-4. Why is this project "viral" ?
-
-Once your Vodstok server functional, please drop the last version
-of Vodstok in the root directory of this web application. A webpage
-will be displayed when browsing the index page, and the kit would
-be available from this page. This is the "viral" part.
+the 'announce' option) and to update the endpoints list on a regular basis
+(thanks to the 'update' option).
 
 5. How to use Vodstok client ?
 
@@ -63,7 +56,7 @@ client will be updated regularly.
 Many operations can be performed with the provided client:
 - endpoint management (registration, removal, listing, publishing)
 - global capacity assessment
-- upload of a file
-- download of a file thanks to a specific URL
+- file upload
+- file download from a vodstok's URL
 
 

@@ -1,24 +1,25 @@
-_ How to install Vodstok on a server _
-
+How to install Vodstok on a server
+----------------------------------
 
 1. Copy the whole content of www/ in a dedicated place on your server filesystem
 2. Chmod the 'chunks' and 'endpoints' directories to make it writeable (770 or 700, at least)
-3. Configure the config.inc.php file and set up the maximum amount of space your Vodstok will provide (define QUOTA_MB, size in MB)
+3. Browse your newly created web folder, an install page will check your setup and let you choose how much space to share
 4. Configure your Vodstok client to use your new Vodstok endpoint
 
 
-_ How to use the Vodstok client _
+How to use the Vodstok client
+-----------------------------
 
-Vodstok file sharing system is based on storage servers, installed on many web servers. You have to register them (or they will if you try to download a file through Vodstok) before being able to upload a file. This can be done by using the -a option:
+Vodstok file sharing system is based on storage servers, installed on many web servers. You have to register them (or they will if you try to download a file through Vodstok) before being able to upload a file. This can be done by using the _add_ action:
 
-$ ./vodstok -a http://vodstok.server.com/vodstok-directory/
+$ ./vodstok add http://vodstok.server.com/vodstok-directory/
 
-You can remove an server with the -r option, or list the registered ones with the -l option. Be careful, the server url MUST be terminated with a trailing '/'.
+You can remove an server with the _rm_ action, or list the registered ones with the _list_ option. Be careful, the server url MUST be terminated with a trailing slash.
 
 It is strongly recommended to add other servers, to publish yours and update your servers list:
 
-$ ./vodstok -p http://vodstok.server.com/vodstok-directory/
-$ ./vodstok -u
+$ ./vodstok announce http://vodstok.server.com/vodstok-directory/
+$ ./vodstok update
 
 If you want to upload a file, juste be sure that at least one server is registered and use this syntax:
 
@@ -31,5 +32,5 @@ To download a file given a link:
 
 $ ./vodstok [link]
 
-And that's it, if the file is available the Vodstok client will get it and create it in the current directory. You can specify another directory with the -w option. 
+And that's it, if the file is available the Vodstok client will get it and create it in the current directory. You can specify another directory with the -w option.
 
