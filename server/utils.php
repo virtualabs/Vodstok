@@ -370,6 +370,7 @@ function dlChunk($id)
 		{
 			/* update modification time */
 			@touch(CHUNK_DIR.'/'.$id);
+			header("Access-Control-Allow-Origin: *");
 			echo @base64_encode(file_get_contents(CHUNK_DIR.'/'.$id));
 		}
 		else
