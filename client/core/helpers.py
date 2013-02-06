@@ -2,7 +2,21 @@
 Vodstok helpers
 """
 
+from os.path import basename
 from urlparse import urlparse
+
+def clean_filename(_filename):
+    """
+    Clean a filename
+    """
+    # First, apply a basename on it
+    _filename = basename(_filename)
+    # Second, replace all spaces by an underscore
+    _filename = _filename.replace(' ','_')
+    # Third, replace all remaining '/' or '\' by a '-'
+    _filename = _filename.replace('/','-').replace('\\','-')
+    # Last, remove the first char if it is a '.'
+    return _filename if _filename[0] != '.' else _filename[1:]
 
 def normalize(url):
     """

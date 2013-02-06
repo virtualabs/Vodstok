@@ -32,6 +32,7 @@ from time import time
 from stream.filestream import MemoryStream, FileStream
 from random import shuffle
 from threading import Lock
+from core.helpers import clean_filename
 from core.server import ServerIOError, Server
 from core.settings import Settings
 from core.exception import IncorrectParameterError, IncorrectFormatError
@@ -537,7 +538,7 @@ class DownTask:
                 self.__task = DownloadFileTask(self, self.__chunks.split(','), self.__file)
             else:
                 self.__state = DownTask.RECVING
-                self.filename = os.path.join(self.__dst_prefix, filename)
+                self.filename = clean_filename(os.path.join(self.__dst_prefix, filename))
                 self.__file = FileStream(
                     open(self.filename, 'wb'), key=self.__key
                 )
@@ -584,7 +585,7 @@ class UpTask:
         try:
             self.uuid = uuid.uuid1()
             self.__manager = manager
-            self.__filename = os.path.basename(filename)
+            self.__filename = clean_filename(filename)
             self.__file = FileStream(open(filename, 'rb'))
             self.__key = self.__file.get_key()
             self.__state = UpTask.INIT
