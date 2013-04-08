@@ -425,7 +425,11 @@ function dispStats()
 	$usage = array();
     
     $consumed = getConsumedSpace();
-    $free_space =getFreeSpace();
+    if ($consumed == 0)
+        $consumed = '0';
+    $free_space = getFreeSpace();
+    if ($free_space == 0)
+        $free_space = '0';
         
     if (is_dir(CHUNK_DIR))
     {
