@@ -221,6 +221,8 @@ class Server:
             raise ServerIOError()
         except socket.error:
             raise ServerIOError()
+        except ValueError:
+            raise ServerIOError()
 
     def __str__(self):
         return self.url
@@ -245,6 +247,10 @@ class Server:
         except urllib2.URLError:
             return None
         except httplib.InvalidURL:
+            return None
+        except ValueError:
+            return None
+        except socket.error:
             return None
  
     def serialize(self):
