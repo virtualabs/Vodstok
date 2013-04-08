@@ -138,5 +138,5 @@ class ServersDB:
             else:
                 return active_servers[0]
         else:
-            return None
+            return active_servers
  
