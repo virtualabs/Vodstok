@@ -532,28 +532,33 @@ class DownTask:
         in many chunks, the same way files are stored in vodstok.
         """
         if self.__state == DownTask.SUMMARY:
-            filename, version, self.__chunks = self.__file.read().split('|')
-            if filename == 'metadata':
-                self.__file = MemoryStream('', key=self.__key)
-                self.__task = DownloadFileTask(self, self.__chunks.split(','), self.__file)
-            else:
-                self.__state = DownTask.RECVING
-                self.filename = clean_filename(os.path.join(self.__dst_prefix, filename))
-                self.__file = FileStream(
-                    open(self.filename, 'wb'), key=self.__key
-                )
-                self.__task = DownloadFileTask(
-                    self, self.__chunks.split(','), self.__file
-                )
-            if self.__manager is not None:
-                self.__manager.queue_task(self.__task)
+            file_content = self.__file.read()
+            # Is it an old version of chunk ?
+            if (file_content.count('|') == 1):
+                filename, self.__chunks = file_content.split('|')
+            elif (file_content.count('|') == 2):
+                filename, version, self.__chunks = self.__file.read().split('|')
+                if filename == 'metadata':
+                    self.__file = MemoryStream('', key=self.__key)
+                    self.__task = DownloadFileTask(self, self.__chunks.split(','), self.__file)
+                else:
+                    self.__state = DownTask.RECVING
+                    self.filename = clean_filename(os.path.join(self.__dst_prefix, filename))
+                    self.__file = FileStream(
+                        open(self.filename, 'wb'), key=self.__key
+                    )
+                    self.__task = DownloadFileTask(
+                        self, self.__chunks.split(','), self.__file
+                    )
+                if self.__manager is not None:
+                    self.__manager.queue_task(self.__task)
         elif self.__state == DownTask.RECVING:
             self.__state = DownTask.DONE
             self.__file.close()
             if self.__manager is not None:
                 # notify manager of new servers
                 for chunk in self.__chunks.split(','):
-                    server,alias = chunk.split('?')
+                    server, alias = chunk.split('?')
                     self.__manager.on_server_discovered(Server(server))
                 self.__manager.on_task_done(self)
 
