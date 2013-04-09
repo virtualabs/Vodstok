@@ -1,7 +1,7 @@
 import sys
 from time import time
 from core.helpers import format_speed
-from core.exception import IncorrectParameterError, IncorrectFormatError,\
+from core.exception import IncorrectParameterError, IncorrectFormatError, \
     ServerIOError
 from storage.user import User
 from downup.scheduler import Scheduler
@@ -16,9 +16,9 @@ class ServersManager:
     it will be used as a manager handling regular servers list updates
     and background checks.
     """
-    
+
     gInst = None
-    
+
     @staticmethod
     def get_instance():
         """
@@ -34,7 +34,7 @@ class ServersManager:
     def check_servers(self):
         """
         Check servers based on user's servers list.
-        
+
         The check is performed by sending a chunk to the target server
         and then retrieving it. If everything is OK, then the server is
         considered as OK.
@@ -224,7 +224,7 @@ class DownUpManager:
         task = DownTask(self, url, prefix)
         self.__register_task(task)
         return task.uuid
-            
+
     def start_task(self, task):
         """
         Start a given task
@@ -324,7 +324,7 @@ class DownUpManager:
         if task.uuid in self.__tasks:
             self.__tasks[task.uuid].update(done, total)
             self.notify_task_progress(task.uuid, float(done)/total)
-            
+
     def on_server_discovered(self, server):
         """
         New server discovered event handler
@@ -339,7 +339,7 @@ class DownUpManager:
                 self.__manager.add(server)
             except ServerIOError:
                 pass
-                
+
 
 
 class CmdLineManager:
@@ -374,7 +374,7 @@ class CmdLineManager:
     def download(self, filename, prefix=''):
         """
         Download a file
-        
+
         @throws IncorrectParameterError
         """
         try:
@@ -384,7 +384,7 @@ class CmdLineManager:
         except IncorrectFormatError:
             print '[!] Error: bad URL format'
             self._manager.shutdown()
-            
+
     def on_task_done(self, task):
         """
         Task completed callback
@@ -436,7 +436,7 @@ class CmdLineManager:
             sys.stdout.write('\n')
             print '[!] Unable to upload'
             self._manager.shutdown()
-            
+
     def on_task_created(self, task):
         if self.kind == 'up':
             action = 'Uploading '
@@ -445,7 +445,7 @@ class CmdLineManager:
         sys.stdout.write('\r%s: [' % action +' '*40 + '] %s     ' % \
             format_speed(self._manager.get_task(task).speed))
         return
-        
+
     def on_task_started(self, task):
         return
 
