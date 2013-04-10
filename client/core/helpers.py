@@ -32,21 +32,21 @@ def normalize(url):
     if url[-1] != '/':
         url += '/'
     return url
-    
+
 
 def to_hex(byte_array):
     """
     String to hex
     """
     return ''.join(['%02X'%ord(byte) for byte in byte_array])
-        
+
 def from_hex(hexbytes):
     """
     Hex to string
     """
     return ''.join(['%c'%(int(hexbytes[index*2:(index+1)*2], 16))\
         for index in range(len(hexbytes)/2)])
-        
+
 def convert_bytes(size):
     """
     Python recipe from http://www.5dollarwhitebox.org/drupal/node/84
@@ -80,3 +80,96 @@ def format_speed(speed):
         return '%0.2f Kb/s' % (float(speed)/2**10)
     else:
         return '%d b/s' % speed
+
+class VersionStr:
+    """
+    Version string
+
+    This class allows version comparison.
+    Version format: [major].[minor].[revision]
+    """
+    def __init__(self, version):
+        self.__version = version
+        ver = self.__version.split('.')
+        self.__major = int(ver[0])
+        self.__minor = int(ver[1])
+        self.__rev = int(ver[2])
+
+    def major(self):
+        """
+        Returns major number
+        """
+        return self.__major
+
+    def minor(self):
+        """
+        Returns minor number
+        """
+        return self.__minor
+
+    def rev(self):
+        """
+        Returns revision number
+        """
+        return self.__rev
+
+    def __str__(self):
+        """
+        Format version string.
+        """
+        return '%d.%d.%d' % (self.__major, self.__minor, self.__rev)
+
+    def __repr__(self):
+        """
+        Return the formatted version string
+        """
+        return str(self)
+
+    def __lt__(self, other):
+        """
+        Is this version string less than other ?
+        """
+        if self.__major >= other.major():
+            return False
+        elif self.__minor >= other.minor():
+            return False
+        elif self.__rev >= other.rev():
+            return False
+        return True
+
+    def __le__(self, other):
+        """
+        Is this version string less or equal than other ?
+        """
+        if self.__major > other.major():
+            return False
+        elif self.__minor > other.minor():
+            return False
+        elif self.__rev > other.rev():
+            return False
+        return True
+
+    def __eq__(self, other):
+        """
+        Is this version string equal to other ?
+        """
+        if self.__major != other.major():
+            return False
+        elif self.__minor != other.minor():
+            return False
+        elif self.__rev != other.rev():
+            return False
+        return True
+
+    def __gt__(self, other):
+        """
+        Is this version string greater than other ?
+        """
+        return (not self.__le__(other))
+
+    def __ge__(self, other):
+        """
+        Is this version string greater or equal than other ?
+        """
+        return (not self.__lt__(other))
+
