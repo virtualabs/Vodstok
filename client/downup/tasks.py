@@ -32,10 +32,11 @@ from time import time
 from stream.filestream import MemoryStream, FileStream
 from random import shuffle
 from threading import Lock
-from core.helpers import clean_filename
+from core.helpers import clean_filename, VersionStr
 from core.server import ServerIOError, Server
 from core.settings import Settings
-from core.exception import IncorrectParameterError, IncorrectFormatError
+from core.exception import IncorrectParameterError, IncorrectFormatError, \
+    VersionError
 
 
 class AbstractTask:
@@ -229,7 +230,7 @@ class DownloadChunkTask(AbstractChunkTask):
         except ServerIOError:
             self.chunk = None
             return False
-        
+
 class UploadChunkTask(AbstractChunkTask):
 
     """
@@ -538,6 +539,10 @@ class DownTask:
                 filename, self.__chunks = file_content.split('|')
             elif (file_content.count('|') == 2):
                 filename, version, self.__chunks = self.__file.read().split('|')
+                # Check version
+                # If version is greater than our version, raise an error.
+                if VersionStr(version) > Settings.version:
+                    raise VersionError()
                 if filename == 'metadata':
                     self.__file = MemoryStream('', key=self.__key)
                     self.__task = DownloadFileTask(self, self.__chunks.split(','), self.__file)

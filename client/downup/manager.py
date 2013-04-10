@@ -384,6 +384,12 @@ class CmdLineManager:
         except IncorrectFormatError:
             print '[!] Error: bad URL format'
             self._manager.shutdown()
+        except VersionError:
+            sys.stdout.write('\n')
+            print '[!] This link was created with a more recent version of '+ \
+                'vodstok, please update your client\n' + \
+                '[!] Check https://github.com/virtualabs/vodstok/'
+            self._manager.shutdown()
 
     def on_task_done(self, task):
         """
@@ -434,7 +440,7 @@ class CmdLineManager:
         """
         if task == self.task:
             sys.stdout.write('\n')
-            print '[!] Unable to upload'
+            print '[!] An I/O Error occured'
             self._manager.shutdown()
 
     def on_task_created(self, task):
