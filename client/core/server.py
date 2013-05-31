@@ -15,36 +15,56 @@ from base64 import b64encode
 from core.exception import ServerIOError
 from core.helpers import normalize
 
-class Server:	
+class Server:
     """
     Vodstok remote storage client
-    
+
     This class is used to communicate with Vodstok's servers.
-    """	
-	
+    """
+
     def __init__(self, url):
         self.version = None
         self.capacity = 0
         self.usage = -1
+        self.note = 5
         self.active = True
         self.set_url(normalize(url))
         self.headers = { "Accept" : "*/*" }
 
     def set_version(self, version):
         self.version = version
-    
+
     def set_capacity(self, capacity):
         self.capacity = capacity
-    
+
     def set_active(self, active):
         self.active = active
-        
+
     def is_active(self):
         return self.active
 
+    def set_note(self, note):
+        self.note = note
+
+    def up(self):
+        if self.is_active() and self.note < 5:
+            # server is active and its note can be increased ? increase.
+            self.note += 1
+        elif not self.is_active():
+            # server was inactive and is now active and working, increase note
+            # and no longer marked as inactive.
+            self.note += 1
+            self.set_active(True)
+
+    def down(self):
+        if self.is_active() and self.note > 0:
+            self.note -= 1
+            if self.note == 0:
+                self.set_active(False)
+
     def set_url(self, url):
         url_info = urlparse.urlparse(url)
-        self.scheme = url_info.scheme		
+        self.scheme = url_info.scheme
         self.server = url_info.netloc
         self.uri = url_info.path
         self.url = urlparse.urlunparse(
@@ -71,7 +91,7 @@ class Server:
         self.versionurl = '%s://%s%s?version' % (
             self.scheme, self.server, self.uri
         )
-		
+
     def upload(self, chunk):
         """
         Upload of raw chunk of datae
@@ -90,8 +110,8 @@ class Server:
             r.putheader('Accept','*/*')
             r.endheaders()
             r.send(p)
-            
-            # Analyze response		
+
+            # Analyze response
             resp = r.getresponse()
             if resp.status == 200:
                 # check if the returned ID is a MD5 hash
@@ -104,7 +124,7 @@ class Server:
                 raise ServerIOError()
         except:
             raise ServerIOError()
-			
+
     def download(self, id):
         """
         Download a chunk of data based on its ID
@@ -129,7 +149,7 @@ class Server:
             raise ServerIOError()
         except socket.error:
             raise ServerIOError()
-	
+
     def publish(self, endpoint_url):
         """
         Publish a given endpoint on this endpoint
@@ -140,11 +160,13 @@ class Server:
             if resp:
                 return (resp.getcode() == 200)
             return False
+        except urllib2.URLError, error:
+            raise ServerIOError()
         except urllib2.HTTPError, error:
             if error.getcode() == 404:
                 return False
             raise ServerIOError()
-	
+
     def list_registered_endpoints(self):
         """
         Retrieve a sample of published endpoints
@@ -167,7 +189,7 @@ class Server:
             raise ServerIOError()
         except socket.error:
             raise ServerIOError()
-	
+
     def alias(self, a):
         return '%s?%s' % (self.url, a)
 
@@ -180,7 +202,7 @@ class Server:
             output = self.download(chunk_id)
             return (output == data)
         except ServerIOError:
-            return False		
+            return False
 
     def get_capacity(self):
         """
@@ -252,18 +274,19 @@ class Server:
             return None
         except socket.error:
             return None
- 
+
     def serialize(self):
         return {
             'url':self.url,
             'version':self.version,
+            'note':self.note,
             'active':self.active,
             'capacity':self.capacity
         }
-    
+
     @staticmethod
     def unserialize(serialized):
-        check_keys = ['url', 'version', 'active', 'capacity']
+        check_keys = ['url', 'version', 'active', 'capacity', 'note']
         for key in check_keys:
             if key not in serialized:
                 return None
@@ -271,4 +294,6 @@ class Server:
         server.set_active(serialized['active'])
         server.set_version(serialized['version'])
         server.set_capacity(serialized['capacity'])
+        server.set_note(serialized['note'])
         return server
+
