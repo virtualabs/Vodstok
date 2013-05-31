@@ -10,11 +10,11 @@ from threading import Thread, Lock
 from core.settings import Settings
 
 class Worker(Thread):
-    
+
     """
     Scheduler worker
     """
-    
+
     def __init__(self, scheduler, task):
         Thread.__init__(self)
         self.task = task
@@ -26,11 +26,11 @@ class Worker(Thread):
         Cancel this worker
         """
         self.__canceled = True
-		
+
     def run(self):
         """
         Worker's main loop.
-        
+
         This is where the worker grab task to perform, performs them and notify
         their results.
         """
@@ -50,10 +50,9 @@ class Scheduler(Thread):
 
     """
     Custom task scheduler.
-    
+
     This scheduler is built upon threads, handling a pool of tasks. Each task
-    is performed separately, and the whole process is supervised. 
-    
+    is performed separately, and the whole process is supervised.
     The scheduler provides a way to easily enqueue and manage tasks.
     """
 
@@ -78,13 +77,13 @@ class Scheduler(Thread):
         Return a random repository (not used yet)
         """
         return
-		
+
     def acquire_repository(self):
         """
         Acquire a random repository (vodstok server)
         """
         return self.__rep_manager.pick_random()
-		
+
     def release_repository(self):
         """
         No locking yet. Should be implemented soon.
@@ -96,7 +95,7 @@ class Scheduler(Thread):
         Enqueue a given task.
         """
         self.tasks.append(task)
-		
+
     def remove_task(self, task):
         """
         Remove a given task from task queue
@@ -132,17 +131,17 @@ class Scheduler(Thread):
         else:
             self.__lock.release()
             return None
-		
+
     def on_worker_done(self, chunk_task):
         """
         Called when a worker processed a task. Task is then notified.
         """
         file_task = chunk_task.get_parent_filetask()
-        file_task.on_task_done(chunk_task)					
+        file_task.on_task_done(chunk_task)
 
     def on_worker_error(self, chunk_task):
         """
-        Called when a worker encountered an error while processing a task 
+        Called when a worker encountered an error while processing a task
         Task is notified of this failure.
         """
         file_task = chunk_task.get_parent_filetask()
@@ -151,7 +150,7 @@ class Scheduler(Thread):
     def run(self):
         """
         Scheduler main loop
-        
+
         Workers are started, and the scheduler runs until all workers are
         stopped (or canceled)
         """
@@ -162,4 +161,4 @@ class Scheduler(Thread):
         while len(self.tasks)>0 and not self.__canceled:
             # using pass is better than sleep =)
             sleep(0.1)
-			
+

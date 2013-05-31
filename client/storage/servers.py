@@ -8,15 +8,15 @@ from random import shuffle
 
 from core.settings import Settings
 from core.server import Server
-        
+
 class ServersDB:
-    
+
     """
     Vodstok server database
-    
+
     This version of the database is a bit crappy, but this will be
     improved in the upcoming versions.
-    
+
     The actual database only stores servers URL in a file called
     'servers' in the user's project directory. The data inside this file
     is pickled.
@@ -48,13 +48,13 @@ class ServersDB:
 
     def __len__(self):
         return len(self.servers)
-    
+
     def has(self, server):
         """
         Check if a server is already known
         """
         return (server in self.servers)
-    
+
     def sync(self):
         """
         Synchronize memory data and disk data.
@@ -73,11 +73,11 @@ class ServersDB:
             self.sync()
             return True
         return False
-    
+
     def add(self, server):
         """
-        Add a server given its URL. 
-        
+        Add a server given its URL.
+
         The server URL is not added if already present.
         """
         if server not in self.servers:
@@ -85,7 +85,7 @@ class ServersDB:
             self.sync()
             return True
         return False
-        
+
     def update(self, server):
         """
         Update a server given its URL.
@@ -96,19 +96,19 @@ class ServersDB:
             self.sync()
             return True
         return False
-    
+
     def count_active(self):
-        active = 0    
+        active = 0
         if self.servers is not None:
             for server in self.servers:
                 if server.is_active():
                     active += 1
         return active
-        
+
     def enum(self, active=True):
         """
         Yields every server URL wrapped into a Server object.
-        
+
         This is a generator, meant to be used in a for loop.
         """
         if self.servers is not None:
@@ -118,7 +118,7 @@ class ServersDB:
                         yield server
                 else:
                     yield server
-            
+
     def pick_random(self, count=1):
         """
         Return a randomly chosen server.
@@ -130,7 +130,7 @@ class ServersDB:
                 active_servers.append(server)
         # shuffle
         shuffle(active_servers)
-        
+
         # return a random slice
         if self.count_active()>0:
             if count>1:
@@ -139,4 +139,4 @@ class ServersDB:
                 return active_servers[0]
         else:
             return active_servers
- 
+
