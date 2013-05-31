@@ -18,8 +18,9 @@ from downup.manager import CmdLineManager
 from core.server import Server, ServerIOError
 from storage.user import User
 from core.settings import Settings
+from base64 import b64encode
 
-socket.setdefaulttimeout(30.0)
+socket.setdefaulttimeout(10.0)
 
 class Options(OptionParser):
     """
@@ -57,6 +58,24 @@ class Vodstok:
             print ' + %s (%s)' % (server,convert_bytes(server.capacity))
             i += 1
         print '[i] %d registered server(s)' % i
+
+    def has_duplicates(self, server):
+        """
+        Find duplicated servers.
+        """
+        data = b64encode(os.urandom(16))
+        try:
+            chunk = server.upload(data)
+        except ServerIOError:
+            server.down()
+        for s in self._db.enum():
+            try:
+                dl = s.download(chunk)
+                if (dl == data) and (server != s):
+                    return True
+            except ServerIOError, error:
+                pass
+        return False
 
     def add_server(self, server):
         """
@@ -111,14 +130,18 @@ class Vodstok:
 
         # Step 0: checking current servers
         print '[+] Checking current servers ...'
-        for server in self._db.enum(active=False):
-            if not server.check():
-                print '[!] Server %s is not working anymore, set inactive' % server.url
+        for server in self._db.servers:
+            sys.stdout.write(' > checking %s ... ' % server.url)
+            sys.stdout.flush()
+            if not server.check() and server.is_active():
+                sys.stdout.write('not working, disabled\n')
+                sys.stdout.flush()
                 server.set_active(False)
-                self._db.update(server)
             else:
+                sys.stdout.write('success\n')
+                sys.stdout.flush()
                 server.set_active(True)
-                self._db.update(server)
+        self._db.sync()
 
         # Step 1: get a pool of 10 random active servers
         print '[+] Collecting new servers from Vodstok network ...'
@@ -141,16 +164,28 @@ class Vodstok:
         done = 0
         if len(pot_servers)>0:
             print '[+] %d new servers collected.' % len(pot_servers)
-            print '[+] Registering servers ... '
+            print '[+] Checking collected servers ... '
             for server in pot_servers:
+                sys.stdout.write(' > checking %s ... ' % server)
+                sys.stdout.flush()
                 try:
                     version = server.get_version()
                     if server.check():
-                        server.set_version(version)
-                        server.set_active(True)
-                        self._db.add(server)
-                        done +=1
+                        if not self.has_duplicates(server):
+                            server.set_version(version)
+                            server.set_active(True)
+                            self._db.add(server)
+                            sys.stdout.write('registered\n')
+                            sys.stdout.flush()
+                            done +=1
+                        else:
+                            sys.stdout.write('existing\n')
+                            sys.stdout.flush()
+                            server.set_active(False)
+                            self._db.add(server)
                     else:
+                        sys.stdout.write('not working\n')
+                        sys.stdout.flush()
                         server.set_active(False)
                         self._db.add(server)
                 except ServerIOError:
@@ -169,6 +204,7 @@ class Vodstok:
             except ServerIOError:
                 pass
         print '[i] Done.'
+        self._db.sync()
 
     def get_random_server(self, filesize=0):
         """
