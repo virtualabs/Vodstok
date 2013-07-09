@@ -1,5 +1,8 @@
 <?php
 
+/* Allow access from other domains: this is a web API ! */
+header("Access-Control-Allow-Origin: *");
+
 /*
  * Check install
  */
@@ -17,7 +20,7 @@ if (file_exists('config.inc.php'))
  *
  * Check if bcmath or gmp is present
  */
- 
+
 function is_largefs_compliant()
 {
     return (extension_loaded('bcmath') || extension_loaded('gmp'));
@@ -29,22 +32,22 @@ function is_largefs_compliant()
  *
  * Check if an entry name corresponds to one of our metadata files
  */
- 
+
 function is_meta($entry_name)
 {
     if (strlen($entry_name)>0)
         return ($entry_name[0]=='.');
     else
         return false;
-} 
+}
 
 
 /**
  * add
- * 
+ *
  * bcmath/gmp compatible. Adds two big integers.
  */
- 
+
 function add($a, $b)
 {
     /* If bcmath */
@@ -59,7 +62,7 @@ function add($a, $b)
 
 /**
  * sub
- * 
+ *
  * bcmath/gmp compatible. Subs two big integers.
  */
 
@@ -77,10 +80,10 @@ function add($a, $b)
 
 /**
  * comp
- * 
+ *
  * bcmath/gmp compatible. Compares two big integers.
  */
- 
+
 function comp($a, $b)
 {
     /* If bcmath */
@@ -119,7 +122,7 @@ function test_write($dir)
         $data = rand();
         @fwrite($f, $data);
         @fclose($f);
-        
+
         /* Reopen it */
         $f = @fopen($dir.'/.test','r');
         if ($f)
@@ -130,11 +133,11 @@ function test_write($dir)
             @fclose($f);
             return $res;
         }
-        
+
         /* Remove test file */
         @unlink($dir.'./test');
     }
-    
+
     /* An error occurred */
     return false;
 }
@@ -178,7 +181,7 @@ function lock() {
             else
                 error('ERR_UNK (lock file cannot be created)');
         }
-        
+
         /* Open lock file */
         $f = fopen(CHUNK_DIR.'/.lock','r');
         flock($f, LOCK_EX);
@@ -188,7 +191,7 @@ function lock() {
 
 /**
  * unlock(handle)
- * 
+ *
  * Unlock a previously acquired file lock.
  */
 
@@ -200,7 +203,7 @@ function unlock($f) {
 
 /**
  * getConsumedSpace()
- * 
+ *
  * Read the .size file located in the chunk directory. This file contains
  * the total size used by all chunks.
  */
@@ -255,12 +258,12 @@ function setConsumedSpace($space_left) {
 }
 
 
-/** 
+/**
  * getFreeSpace()
  *
  * Compute the remaining disk space based on the defined quota and returns it.
  */
- 
+
 function getFreeSpace()
 {
     $free_space = sub(QUOTA,getConsumedSpace());
@@ -286,7 +289,7 @@ function deleteOldestChunk() {
             $dir = opendir(readlink(CHUNK_DIR));
         else
         	$dir = opendir(CHUNK_DIR);
-            
+
         if ($dir !== false)
         {
         	$older = '';
@@ -304,20 +307,20 @@ function deleteOldestChunk() {
                     }
                 }
         	closedir($dir);
-        
+
             /* compute the new size */
             $entry_size = filesize(CHUNK_DIR.'/'.$older);
             $left = getConsumedSpace() - $entry_size;
             if ($left < 0)
                 $left = 0;
             setConsumedSpace($left);
-            
+
         	/* unlink older file */
         	@unlink(CHUNK_DIR.'/'.$older);
             return;
         }
     }
-    
+
     /* An error occurred */
     error('ERR_BAD_DIRECTORY: GetFreeSpace');
 }
@@ -331,7 +334,7 @@ function deleteOldestChunk() {
  *
  * If the required space is greater than the defined quota, throws an error.
  */
- 
+
 function clean($space)
 {
 	/* Check if space required is out of quota */
@@ -345,11 +348,11 @@ function clean($space)
         do {
             /* If ok, remove the oldest chunk */
             deleteOldestChunk();
-            
+
             /* Get freespace */
             $free_space = getFreeSpace();
         } while (comp($free_space,$space)<0);
-    }		
+    }
 }
 
 
@@ -359,7 +362,7 @@ function clean($space)
  * Echo the content of a given chunk if present in our chunks directory.
  * Echoed content is base64 encoded.
  */
- 
+
 function dlChunk($id)
 {
 	/* Check id */
@@ -370,7 +373,6 @@ function dlChunk($id)
 		{
 			/* update modification time */
 			@touch(CHUNK_DIR.'/'.$id);
-			header("Access-Control-Allow-Origin: *");
 			echo @base64_encode(file_get_contents(CHUNK_DIR.'/'.$id));
 		}
 		else
@@ -386,20 +388,20 @@ function dlChunk($id)
  *
  * Creates a chunk in CHUNK_DIR.
  */
- 
+
 function createChunk($data)
 {
 	/* Check max chunk size (32Ko) */
 	$data = @base64_decode($data);
 	if (strlen($data)>32768)
-		error('ERR_TOO_LARGE');	
+		error('ERR_TOO_LARGE');
 
 	/* Check if chunk exists */
 	$id = md5($data.$_SERVER['REMOTE_ADDR'].time().rand());
 	if (!file_exists(CHUNK_DIR.'/'.$id))
 	{
         $lock = lock();
-        
+
 		/* Make enough room for this chunk */
 		clean(strlen($data));
 
@@ -407,14 +409,13 @@ function createChunk($data)
 		$f = fopen(CHUNK_DIR.'/'.$id,'wb');
 		fwrite($f, $data);
 		fclose($f);
-        
+
         /* Update consumed size */
         $consumed = getConsumedSpace();
         setConsumedSpace(add($consumed,strlen($data)));
 
 		/* Chmod */
 		chmod(CHUNK_DIR.'/'.$id, 0777);
-        
         unlock($lock);
 	}
 	die($id);
@@ -424,54 +425,21 @@ function dispStats()
 {
 	$quota = QUOTA;
 	$usage = array();
-    
+
     $consumed = getConsumedSpace();
     if ($consumed == 0)
         $consumed = '0';
     $free_space = getFreeSpace();
     if ($free_space == 0)
         $free_space = '0';
-        
+
     if (is_dir(CHUNK_DIR))
     {
-        /*
-        if (is_link(CHUNK_DIR))
-            $dir = opendir(readlink(CHUNK_DIR));
-        else
-        	$dir = opendir(CHUNK_DIR);
-            
-        if ($dir !== false)
-        {
-            $chunks = 0;
-            $min=time();
-            
-            while (false !== ($entry = readdir($dir))) {
-                if (!is_meta($entry) && !is_dir($entry))
-                {
-                    $entry_creation_date = @filemtime(CHUNK_DIR.'/'.$entry);
-                    if ($entry_creation_date<$min)
-                        $min = $entry_creation_date;
-                    $chunks++;
-                }
-            }
-            if ((time()-$min)>0)
-                $usage_med = floor(($chunks*60)/(time()-$min));
-            else
-                $usage_med = 0;
-        
-        	$used = $chunks*32768;
-        	if ($used>$quota)
-        	   $used = $quota;
-               
-        	die('quota:'.$quota.',used:'.$used.',chunks:'.$chunks.',usage:'.$usage_med);
-        }
-        */
         die('quota:'.$quota.',used:'.$consumed.',chunks:'.floor($consumed/32768.0).',usage:0');
     }
-    
+
     /* An error occured */
     error('ERR_BAD_DIRECTORY');
-    
 }
 
 /** Endpoints related stuff **/
@@ -490,11 +458,11 @@ function shouldRegister($ip, $server) {
             $dir = opendir(readlink(SERVERS_DIR));
         else
         	$dir = opendir(SERVERS_DIR);
-        
+
         if ($dir !== false)
         {
         	$older = '';
-        	$limit = time()-3600;		
+        	$limit = time()-3600;
             $used = 0;
             $hash = md5($server);
             while (false !== ($entry = readdir($dir))) {
@@ -523,7 +491,7 @@ function shouldRegister($ip, $server) {
         	return true;
         }
     }
-    
+
     /* An error occurred */
     error('ERR_BAD_DIRECTORY');
     return false;
@@ -532,7 +500,7 @@ function shouldRegister($ip, $server) {
 
 /**
  * deleteOldestServer()
- * 
+ *
  * Delete the oldest server from the directory
  */
 
@@ -543,11 +511,11 @@ function deleteOldestServer() {
             $dir = opendir(readlink(SERVERS_DIR));
         else
         	$dir = opendir(SERVERS_DIR);
-        
+
         if ($dir !== false)
         {
         	$older = '';
-        	$older_ts = time();		
+        	$older_ts = time();
             $used = 0;
             while (false !== ($entry = readdir($dir))) {
                     if (!is_meta($entry) && !is_dir($entry))
@@ -561,13 +529,13 @@ function deleteOldestServer() {
                     }
             }
         	closedir($dir);
-        
+
         	/* unlink older file */
         	@unlink(SERVERS_DIR.'/'.$older);
             return;
         }
     }
-    
+
     /* An error occured */
     error('ERR_BAD_DIRECTORY');
 }
@@ -575,7 +543,7 @@ function deleteOldestServer() {
 
 /**
  * registerServer($ip, $url)
- * 
+ *
  * Registers a server into the directory. $ip is required
  * to limit flooding.
  */
@@ -584,7 +552,7 @@ function registerServer($ip, $url)
 {
 	/* Check last endpoint registration for this IP address */
 	if (!shouldRegister($ip,$url))
-		error('ERR_CANNOT_REGISTER');	
+		error('ERR_CANNOT_REGISTER');
 
 	/* Create endpoint file */
     if (is_dir(CHUNK_DIR))
@@ -615,7 +583,7 @@ function listRandomServers()
             $dir = opendir(readlink(SERVERS_DIR));
         else
         	$dir = opendir(SERVERS_DIR);
-        
+
         if ($dir !== false)
         {
         	$dir = opendir(SERVERS_DIR);
@@ -625,13 +593,13 @@ function listRandomServers()
                         array_push($servers, file_get_contents(SERVERS_DIR.'/'.$entry));
             }
         	closedir($dir);
-            
+
             /* shuffle and keep only the 5 first entries */
             shuffle($servers);
             die(implode(',',array_slice($servers,0,5)));
         }
     }
-    
+
     /* An error occurred */
     error('ERR_BAD_DIRECTORY');
 }
