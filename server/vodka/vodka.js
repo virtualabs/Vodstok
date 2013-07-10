@@ -8,10 +8,6 @@ var VodkaSimpleDl = function(url) {
     this.progress = 0;
     this.download_started = false;
 
-    $('#progressbar').progressbar({
-        value: 0
-    });
-
     this.events = new events();
     this.events.subscribe(this, 'progress', this.onProgress);
 
@@ -44,6 +40,10 @@ var VodkaSimpleDl = function(url) {
                   view[i] = content[1].charCodeAt(i) & 0xff;
             }
             makeDl(content[0], view);
+        }).fail(function(){
+            $('#progressbar').hide();
+            $('#dlbtn').hide();
+            $('#action').text('An error occured while downloading your file.');
         });
     } else {
         console.log('No file to download');
@@ -70,13 +70,24 @@ VodkaSimpleDl.prototype.dlFile = function(chunk, key) {
                 inst.nchunks = chunks.length;
                 inst.progress = 0;
                 inst.download_started = true;
-
-                /* Launch the download of all chunks. */
-                inst.dlChunk(chunks, key, true).done((function(filename, dfd){
-                    return function(content){
-                        dfd.resolve([filename, content]);
-                    };
-                })(filename, dfd));
+                
+                /* Display the download button */
+                $('#dlbtn').button({label:'Download &laquo;' + filename + '&raquo;'})
+                    .unbind('click')
+                    .bind('click', (function(inst, filename, dfd){
+                        return function(){
+                            $('#dlbtn').hide();
+                            $('#progressbar').show();
+                            
+                            /* Launch the download of all chunks. */
+                            inst.dlChunk(chunks, key, true).done((function(filename, dfd){
+                                return function(content){
+                                    dfd.resolve([filename, content]);
+                                };
+                            })(filename, dfd));
+                        };
+                    })(inst, filename, dfd))
+                    .show();
             } else {
                 /* Retrieve the complete metadata and launch the download of all chunks. */
                 dfd.resolve(inst.dlChunk(chunks, key, false)).done((function(inst, dfd, key){
@@ -101,7 +112,9 @@ VodkaSimpleDl.prototype.dlFile = function(chunk, key) {
             }
         };
     })(this, dfd, key)).fail((function(dfd){
-        return function(){ dfd.reject(); };
+        return function(){
+            dfd.reject();
+        };
     })(dfd));
 
     return dfd.promise();
@@ -145,8 +158,10 @@ VodkaSimpleDl.prototype.dlChunk = function(chunks, key, last) {
                 dfd.resolve();
             };
         })(this, dfd_, blobs, chunk_array[i].id, key)).fail((function(dfd){
-            return function(){dfd.reject();};
-        })(dfd));
+            return function(){
+                dfd.reject();
+            };
+        })(dfd_));
         deferreds.push(dfd_.promise());
     }
     /* Once done, put all in one and return it */
@@ -178,7 +193,11 @@ VodkaSimpleDl.prototype.dlChunk = function(chunks, key, last) {
 };
 
 VodkaSimpleDl.prototype.onProgress = function(progress) {
-    $('#progressbar').progressbar('value', (progress/this.nchunks)*100);
+    var percent = Math.ceil((progress/this.nchunks)*100);
+    console.log(percent);
+    var progressBarWidth = percent * $('#progressbar').width() / 100;
+    console.log(progressBarWidth);
+    $('#progressbar').find('div').css('width',progressBarWidth+'px').html(percent + "%&nbsp;");
 };
 
 /**
@@ -207,7 +226,7 @@ function makeDl(filename, content) {
 }
 
 //var test = new VodkaSimpleDl('http://virtualabs.fr/vodstok/#7f7f3e635b1b2bbf613d677462f8704c-86aec4b638f84315bcb6fad67dc7aed5');
-var test = new VodkaSimpleDl('http://virtualabs.fr/vodstok/#aa99a1b0fcce7f5934c1d6b52164f8ad-9433d26cdfd1606bb09efccb45a8139c');
+//var test = new VodkaSimpleDl('http://virtualabs.fr/vodstok/#aa99a1b0fcce7f5934c1d6b52164f8ad-9433d26cdfd1606bb09efccb45a8139c');
 //var test = new VodkaSimpleDl();
 /*
 client.endpoints().done(function(ep){
