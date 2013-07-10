@@ -17,7 +17,8 @@ var VodClient = function(urlbase){
  */
 VodClient.prototype.dlChunk = function(chunk_id) {
     var dfd = $.Deferred();
-    $.ajax({
+    
+    (new AjaxSpooler()).add({
         url: this.urlbase+'?chunk='+chunk_id,
         crossDomain: true,
         success: (function(dfd){
@@ -45,7 +46,7 @@ VodClient.prototype.dlChunk = function(chunk_id) {
  */
 VodClient.prototype.uploadChunk = function(content) {
     var dfd = $.Deferred();
-    $.ajax({
+    (new AjaxSpooler()).add({
         url: this.urlbase,
         crossDomain: true,
         type: 'POST',
@@ -77,7 +78,7 @@ VodClient.prototype.uploadChunk = function(content) {
 VodClient.prototype.endpoints = function() {
     var dfd = $.Deferred();
 
-    $.ajax({
+    (new AjaxSpooler()).add({
         url: this.urlbase + '?endpoints',
         crossDomain: true,
         success: (function(dfd){
@@ -105,7 +106,7 @@ VodClient.prototype.endpoints = function() {
 VodClient.prototype.stats = function() {
     var dfd = $.Deferred();
 
-    $.ajax({
+    (new AjaxSpooler()).add({
         url: this.urlbase+'?stats',
         crossDomain: true,
         success: (function(dfd){
