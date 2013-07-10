@@ -4,6 +4,17 @@
  * @param [url] url Optional URL.
  */
 var VodkaSimpleDl = function(url) {
+    this.nchunks = 0;
+    this.progress = 0;
+    this.download_started = false;
+
+    $('#progressbar').progressbar({
+        value: 0
+    });
+
+    this.events = new events();
+    this.events.subscribe(this, 'progress', this.onProgress);
+
     /* Parse the requested url, or the current location
      * if url is not provided
      */
@@ -56,6 +67,10 @@ VodkaSimpleDl.prototype.dlFile = function(chunk, key) {
             var version = infos[1];
             var chunks = infos[2].split(',');
             if (filename != 'metadata') {
+                inst.nchunks = chunks.length;
+                inst.progress = 0;
+                inst.download_started = true;
+
                 /* Launch the download of all chunks. */
                 inst.dlChunk(chunks, key, true).done((function(filename, dfd){
                     return function(content){
@@ -70,6 +85,11 @@ VodkaSimpleDl.prototype.dlFile = function(chunk, key) {
                         var filename = infos[0];
                         var version = infos[1];
                         var chunks = infos[2].split(',');
+
+                        inst.nchunks = chunks.length;
+                        inst.progress = 0;
+                        inst.download_started = true;
+
                         /* Launching the dl of all chunks */
                         inst.dlChunk(chunks, key, trye).done((function(filename, dfd){
                             return function(content){
@@ -114,13 +134,17 @@ VodkaSimpleDl.prototype.dlChunk = function(chunks, key, last) {
         var client = new VodClient(chunk_array[i].object.split('?')[0]);
         var cid = chunk_array[i].object.split('?')[1];
         var dfd_ = $.Deferred();
-        client.dlChunk(cid).done((function(dfd, blobs, id, key){
+        client.dlChunk(cid).done((function(inst, dfd, blobs, id, key){
             return function(content){
                 content = decryptChunk(content, key);
                 blobs[id] = content;
+                if (inst.download_started) {
+                    inst.progress++;
+                    inst.events.publish('progress', [inst.progress]);
+                }
                 dfd.resolve();
             };
-        })(dfd_, blobs, chunk_array[i].id, key)).fail((function(dfd){
+        })(this, dfd_, blobs, chunk_array[i].id, key)).fail((function(dfd){
             return function(){dfd.reject();};
         })(dfd));
         deferreds.push(dfd_.promise());
@@ -151,6 +175,10 @@ VodkaSimpleDl.prototype.dlChunk = function(chunks, key, last) {
     })(dfd));
 
     return dfd.promise();
+};
+
+VodkaSimpleDl.prototype.onProgress = function(progress) {
+    $('#progressbar').progressbar('value', (progress/this.nchunks)*100);
 };
 
 /**
