@@ -3,7 +3,7 @@
  *
  * @param [url] url Optional URL.
  */
-var VodkaSimpleDl = function(url) {
+var Vodka = function() {
     this.nchunks = 0;
     this.progress = 0;
     this.download_started = false;
@@ -11,6 +11,15 @@ var VodkaSimpleDl = function(url) {
     this.events = new events();
     this.events.subscribe(this, 'progress', this.onProgress);
 
+};
+
+/**
+ * Launch a download
+ *
+ * @this {Vodka}
+ * @param {string} url
+ */
+Vodka.prototype.download = function(url) {
     /* Parse the requested url, or the current location
      * if url is not provided
      */
@@ -53,11 +62,11 @@ var VodkaSimpleDl = function(url) {
 /**
  * Download a file given the first chunk and key.
  *
- * @this {VodkaSimpleDl}
+ * @this {Vodka}
  * @param {string} chunk First chunk URL
  * @param {object} key Decryption key
  */
-VodkaSimpleDl.prototype.dlFile = function(chunk, key) {
+Vodka.prototype.dlFile = function(chunk, key) {
     var dfd = $.Deferred();
 
     this.dlChunk([chunk], key, true).done((function(inst, dfd, key){
@@ -123,13 +132,13 @@ VodkaSimpleDl.prototype.dlFile = function(chunk, key) {
 /**
  * Download a given chunk and optionnaly parses its content.
  *
- * @this {VodkaSimpleDl}
+ * @this {Vodka}
  * @param {array} chunks Array of chunk to download, decrypt and concatenate.
  * @param {object} key Decryption key
  * @param {bool} last Return raw content if true.
  * @return {Deferred} Returns a deferred.
  */
-VodkaSimpleDl.prototype.dlChunk = function(chunks, key, last) {
+Vodka.prototype.dlChunk = function(chunks, key, last) {
     var dfd = $.Deferred();
 
     /* Is it the last chunk ? */
@@ -192,13 +201,91 @@ VodkaSimpleDl.prototype.dlChunk = function(chunks, key, last) {
     return dfd.promise();
 };
 
-VodkaSimpleDl.prototype.onProgress = function(progress) {
+Vodka.prototype.queryEndpoints = function(url) {
+    var dfd = $.Deferred();
+
+    if (url != null) {
+        var uri = new Uri(url);
+        var ep_uri = uri.protocol()+'://'+uri.host();
+        if (uri.port()) {
+            ep_uri += ':'+uri.port();
+        }
+        ep_uri += uri.path();
+    } else {
+        chunk_infos = document.location.hash.slice(1);
+        var ep_uri = document.location.protocol+'//';
+        ep_uri += document.location.host;
+        ep_uri += document.location.pathname;
+    }
+
+    /* Query endpoint for other endpoints */
+    var client = new VodClient(ep_uri);
+    client.endpoints().done((function(inst, ep, jq){
+        return function(endpoints) {
+
+            /* Add current endpoint */
+            inst.endpoints = endpoints;
+            inst.endpoints.filter(function(elem, pos) {
+                    return inst.endpoints.indexOf(elem) == pos;
+            })
+            if (inst.endpoints.indexOf(ep) < 0) {
+                inst.endpoints.push(ep);
+            }
+
+            /* Try to upload a chunk on all of these endpoints.
+             * If it fails, remove endpoints from list.
+             */
+            var deferreds = [];
+            var random_data = randomChunk(16);
+            for (var i in endpoints) {
+                var c = new VodClient(endpoints[i]);
+                var dfd_ = jq.Deferred();
+                c.uploadChunk(random_data).fail((function(inst, ep){
+                    return function() {
+                        inst.endpoints.splice(inst.endpoints.indexOf(ep),1);
+                    };
+                })(inst, endpoints[i])).done((function(inst, ep){
+                    return function(cid) {
+                        var patt = /^[0-9a-f]{32}$/i;
+                        if (!patt.test(cid)) {
+                            inst.endpoints.splice(inst.endpoints.indexOf(ep), 1);
+                        }
+                    };
+                })(inst, endpoints[i])).always((function(dfd){
+                    return function(){
+                        dfd.resolve();
+                    };
+                })(dfd_));
+                deferreds.push(dfd_.promise());
+            }
+            jq.when.apply(jq, deferreds).then((function(inst, dfd){
+                return function(){
+                    console.log('done');
+                    if (inst.endpoints.length == 0) {
+                        dfd.reject();
+                    } else {
+                        dfd.resolve(inst.endpoints);
+                    }
+                };
+            })(inst, dfd));
+        };
+    })(this, ep_uri, $)).fail((function(dfd){
+        return function(){
+            dfd.reject();
+        };
+    })(dfd));
+
+    return dfd.promise();
+};
+
+Vodka.prototype.onProgress = function(progress) {
     var percent = Math.ceil((progress/this.nchunks)*100);
     console.log(percent);
     var progressBarWidth = percent * $('#progressbar').width() / 100;
     console.log(progressBarWidth);
     $('#progressbar').find('div').css('width',progressBarWidth+'px').html(percent + "%&nbsp;");
 };
+
 
 /**
  * Encryption routine
@@ -225,9 +312,9 @@ function makeDl(filename, content) {
     var saver = saveAs(blob, filename);
 }
 
-//var test = new VodkaSimpleDl('http://virtualabs.fr/vodstok/#7f7f3e635b1b2bbf613d677462f8704c-86aec4b638f84315bcb6fad67dc7aed5');
-//var test = new VodkaSimpleDl('http://virtualabs.fr/vodstok/#aa99a1b0fcce7f5934c1d6b52164f8ad-9433d26cdfd1606bb09efccb45a8139c');
-//var test = new VodkaSimpleDl();
+//var test = new Vodka('http://virtualabs.fr/vodstok/#7f7f3e635b1b2bbf613d677462f8704c-86aec4b638f84315bcb6fad67dc7aed5');
+//var test = new Vodka('http://virtualabs.fr/vodstok/#aa99a1b0fcce7f5934c1d6b52164f8ad-9433d26cdfd1606bb09efccb45a8139c');
+//var test = new Vodka();
 /*
 client.endpoints().done(function(ep){
     console.log(ep);
