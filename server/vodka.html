@@ -1,0 +1,187 @@
+<html>
+<head>
+<title>Vodstok - Share files freely</title>
+<link type="text/css" href="css/vodka.css" rel="stylesheet" />   
+<link type="text/css" href="css/font-awesome.min.css" rel="stylesheet" />   
+<link type="text/css" href="css/jquery.share.css" rel="stylesheet" />   
+</head>
+<body>
+    <!-- Main interface -->
+    <div id="page">
+        <div id="logo"></div>
+        <div id="block">
+            <div><i id="action-icon"></i><span id="action"></span></div>
+            <div id="progress">
+                <div id="progressbar">
+                    <div id="bar">
+                        <div id="overlay"></div>
+                    </div>
+                </div>
+                <div id="download">
+                    <div id="dlbtn"></div>
+                </div>
+            </div>
+        </div>
+        <div id="error"></div>
+        <div id="success">
+            <i id="icon"></i>Share this link: <br/><input type="text" id="linkbox"></input>
+        </div>
+        <div id="droppy" ondragover="return false">
+        </div>
+        <div id="about">
+            <h2>What is Vodstok ?</h2>
+            <p>Vodstok was primarily developped as a <i>voluntary distributed storage kit</i> that anybody may use to be part of a acentered storage network. More than that, it is now an easy-to-use platform to share information (your files, pictures, documents, whatever you want) freely and securely.</p>
+            <p>You can see Vodstok as a great hard drive splitted over multiple servers all over the Internet. Since Vodstok is an OpenSource web application, anybody can install it on a server and share a part of its allocated space with other Vodstok users ! Vodstok is easy to install, because it does not need any heavy database and only relies on PHP version >5.2.</p>
+            <h2>How to contribute to the Vodstok network ?</h2>
+            <p>This is pretty easy. If you own a server and want to share a part of your storage, download Vodstok from our github, unzip files to your servers, and follow the instructions. You'll have to chose an amount of space to allocate to your Vodstok server, ensure some files and directories permissions and that's it ! A simple web hosting is enough to be part of Vodstok Network.</p>
+            <p>Once installed, feel free to register your server on this Vodstok server by filling the following form and clicking on the 'Register' button. Your server URL will be propagated automatically to the other Vodstok servers when users will use it. If you want to register another Vodstok server you do not own but know, feel free :).</p>
+            <label for="server">Register your server: </label>
+            <input type="text" id="server" value="Your server URL here"/>
+            <button id="register">Register !</button>
+            <p>If you find a bug, a defect or improve the current Vodstok HTML5 client or server, please fork the project on github and ask for a pull request, we will be glad to merge it inside the main code (if this has to be merged).</p>
+            <h2>License</h2>
+            <p>Vodstok is Open Source software, based on other Open Source projects:</p>
+            <ul>
+                <li>Crypto-JS</li>
+                <li>jQuery</li>
+                <li>Filsaver.js</li>
+            </ul>
+            <p>Vodstok heavily relies on brand new HTML 5 features, such as File API and Drag and Drop support. If you have some trouble to see correctly this page or to use the client, see next section.</p>
+            <h2>Support</h2>
+            <p><b>Insults, thanks and other stuff:</b> virtualabs -at- gmail -dot- com</p>
+        </div>
+    </div>
+    <div id="share"></div>
+
+    <!-- JS scripts -->
+    <script src="js/jquery.min.js" type="text/javascript" language="javascript"></script>
+    <script src="js/jquery.share.js" type="text/javascript" language="javascript"></script>
+    <script src="js/filesaver.js" language="javascript"></script>
+    <script src="js/query.js" language="javascript"></script>
+    <script src="js/utils.js" language="javascript"></script>
+    <script src="js/events.js" language="javascript"></script>
+    <script src="js/uri.js" language="javascript"></script>
+    <script src="js/spool.js" language="javascript"></script>
+    <script src="js/client.js" language="javascript"></script>
+    <script src="js/crypto/aes.js" language="javascript"></script>
+    <script src="js/crypto/lib-typedarrays.js" language="javascript"></script>
+    <script src="js/crypto/x64-core.js" language="javascript"></script>
+    <script src="js/crypto/sha512.js" language="javascript"></script>
+    <script src="js/crypto/format-hex.js" language="javascript"></script>
+    <script src="js/vodka.js" language="javascript"></script>
+    <script>
+        $(document).ready(function(){
+            jQuery.event.props.push('dataTransfer');
+
+
+            /* Display download components */
+            $('#progressbar').find('div').css('width','0');
+            $('#block').hide();
+            $('#dlbtn').css('height', '40px').hide();
+            $('#success').hide();
+
+            $('#share').share({
+                networks: ['facebook','pinterest','googleplus','twitter','email','digg'],
+                theme: 'square',
+                orientation: 'vertical',
+                affix: 'right center'
+            }).show();
+
+            $('#droppy').on({
+                dragenter: function(e) {
+                    $(this).css('background-color', '#ccc')
+                        .css('border-color','#bd0000')
+                        .css('color','#000');
+                },
+                dragleave: function(e) {
+                    $(this).css('background-color', '#ddd')
+                        .css('border-color','#888')
+                        .css('color','#333');
+                },
+                drop: function(e) {
+                    $(this).css('background-color', '#ddd')
+                        .css('border-color', '#888')
+                        .css('color', '#333');
+
+                    if(e.originalEvent.dataTransfer){
+                        if(e.originalEvent.dataTransfer.files.length) {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            /* A file was dragged into the drop zone, take only
+                               the first one ! */
+                            var file = e.originalEvent.dataTransfer.files[0];
+                            var fr = new FileReader();
+                            fr.onload = (function(file){
+                               return function(e){
+                                    var client = new Vodka();
+                                    /* Show progressbar in indeterminate mode. */
+                                    $('#bar').css('width','100%').text('');
+                                    var overlay = $('<div/>').addClass('roll')
+                                        .attr('id', 'overlay');
+                                    $('#bar').append(overlay);
+                                    $('#overlay').addClass('roll');
+
+                                    /* Add some text explaining the situation ... */
+                                    $('#action').text('Querying remote servers ...');
+                                    $('#block').show();
+                                    $('#droppy').hide();
+                                    $('#success').hide();
+                                    $('#error').hide();
+
+                                    /* And get endpoints from the current endpoint's DB */
+                                    client.queryEndpoints().done(function(){
+                                        /* Once done, start the upload */
+                                        $('#action').text("Uploading "+file.name+" ...");
+                                        client.uploadFile(file.name, file, generate_key(), false).done(function(res){
+                                                $('#linkbox').val(res);
+                                                $('#success > i').addClass('icon-share icon-large');
+                                                $('#success').show();
+                                                $('#droppy').show();
+                                                $('#block').hide();
+                                                $('#action').text('');
+                                        }).fail(function(){
+                                            /* Upload failed, show an error. */
+                                        });
+                                    }).fail(function(){
+                                            /* Endpoint query failed, shows an error. */
+                                    });
+                               };
+                            })(file);
+
+                            /* Read uploaded file. */
+                            fr.readAsBinaryString(file);
+                        }
+                    }}
+                }).hide();
+
+            /* Create our client */
+            var client = new Vodka();
+
+            /* Bind click event to register button */
+            $('#register').unbind('click').bind('click', function(){
+                var url = $('#server').val();
+                var patt = /^(http|https)://.*$/i;
+                if (patt.test(url)) {
+                    client.register(url);
+                }
+            });
+
+            /* Download mode ? */
+            if (document.location.hash) {
+                /* Display download components */
+                $('#block').show();
+                $('#progressbar').hide();
+                $('#droppy').hide();
+                client.download(document.location.href);
+            } else {
+                /* Upload mode, displays the drop zone. */
+                $('#droppy').show();
+                $('#block').hide();
+                $('#progressbar').find('div').text('').css('width', '0px');
+                $('#droppy').text('Drop a file here to upload');
+            }
+        });
+    </script>
+</body>
+</html>
