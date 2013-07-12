@@ -57,8 +57,13 @@
             //$('#success').hide();
             //$('#error').hide();
 
-            new VodkaSimpleDl('http://virtualabs.fr/vodstok/#aa99a1b0fcce7f5934c1d6b52164f8ad-9433d26cdfd1606bb09efccb45a8139c');
+            //new VodkaSimpleDl('http://virtualabs.fr/vodstok/#aa99a1b0fcce7f5934c1d6b52164f8ad-9433d26cdfd1606bb09efccb45a8139c');
             //new VodkaSimpleDl('http://vodstok.tedomum.net/#3a3048a775a95e6c7cb36d024c89d93b-773e8964b70c4f0206ab3ef221453224');
+            var client = new Vodka();
+            client.queryEndpoints('http://virtualabs.fr/vodstok/').done(function(res){
+                console.log(client.endpoints);
+            }).fail(function(){ console.log('failed'); });
+            //client.download('http://vodstok.tedomum.net/#3a3048a775a95e6c7cb36d024c89d93b-773e8964b70c4f0206ab3ef221453224');
 
             /* Download mode ? */
             if (document.location.hash) {

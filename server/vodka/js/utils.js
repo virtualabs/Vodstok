@@ -74,3 +74,14 @@ var uuid = function(){
         return v.toString(16);
     });
 };
+
+/**
+ * Generate a random string
+ */
+function randomChunk(size)
+{
+    return CryptoJS.lib.WordArray.random(size).toString(CryptoJS.enc.Base64);
+}
+
+
+

@@ -51,7 +51,7 @@ VodClient.prototype.uploadChunk = function(content) {
         crossDomain: true,
         type: 'POST',
         data: {
-            'chunk': data
+            'chunk': content
         },
         success: (function(dfd){
             return function(data){
@@ -62,7 +62,8 @@ VodClient.prototype.uploadChunk = function(content) {
             return function() {
                 dfd.reject();
             };
-        })(dfd)
+        })(dfd),
+        timeout: 10000
     });
 
     /* Returns a deferred. */
@@ -87,10 +88,11 @@ VodClient.prototype.endpoints = function() {
             };
         })(dfd),
         error: (function(dfd){
-            return function(data){
+            return function(){
                 dfd.reject();
             };
-        })(dfd)
+        })(dfd),
+        timeout: 10000
     });
 
     /* Returns a deferred. */
@@ -118,7 +120,8 @@ VodClient.prototype.stats = function() {
             return function(){
                 dfd.reject();
             };
-        })(dfd)
+        })(dfd),
+        timeout: 10000
     });
 
     /* Returns a deferred. */

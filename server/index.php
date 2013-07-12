@@ -52,7 +52,7 @@ else if (isset($_GET['register']))
 else
 {
 /* Main index page */
-?>
+/*
 <html>
 <head>
 <title>Vodstok - Voluntary distributed Storage Kit</title>
@@ -126,7 +126,7 @@ Many operations can be performed with the provided client:
 <b><a href="https://github.com/virtualabs/Vodstok/">Download Vodstok !</a></b>
 </body>
 </html>
-
-<?php
+*/
+readfile('vodka.html');
 }
 ?>
