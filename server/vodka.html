@@ -22,9 +22,11 @@
                 </div>
             </div>
         </div>
-        <div id="error"></div>
+        <div id="error">
+            <i id="icon"></i><span id="error_desc"></span>
+        </div>
         <div id="success">
-            <i id="icon"></i>Share this link: <br/><input type="text" id="linkbox"></input>
+            <i id="icon"></i><span id="success_desc">Share this link: </span><br/><input type="text" id="linkbox"></input>
         </div>
         <div id="droppy" ondragover="return false">
         </div>
@@ -73,12 +75,12 @@
         $(document).ready(function(){
             jQuery.event.props.push('dataTransfer');
 
-
             /* Display download components */
             $('#progressbar').find('div').css('width','0');
             $('#block').hide();
             $('#dlbtn').css('height', '40px').hide();
             $('#success').hide();
+            $('#error').hide();
 
             $('#share').share({
                 networks: ['facebook','pinterest','googleplus','twitter','email','digg'],
@@ -115,6 +117,7 @@
                             fr.onload = (function(file){
                                return function(e){
                                     var client = new Vodka();
+
                                     /* Show progressbar in indeterminate mode. */
                                     $('#bar').css('width','100%').text('');
                                     var overlay = $('<div/>').addClass('roll')
@@ -137,14 +140,21 @@
                                                 $('#linkbox').val(res);
                                                 $('#success > i').addClass('icon-share icon-large');
                                                 $('#success').show();
+                                                $('#error').hide();
                                                 $('#droppy').show();
                                                 $('#block').hide();
                                                 $('#action').text('');
                                         }).fail(function(){
+                                            $('#error_desc').text('Error while uploading file.');
+                                            $('#error > i').addClass('icon-exclamation icon-3x');
+                                            $('#error').show();
                                             /* Upload failed, show an error. */
                                         });
                                     }).fail(function(){
-                                            /* Endpoint query failed, shows an error. */
+                                        /* Endpoint query failed, shows an error. */
+                                        $('#error_desc').text('Unable to query servers.');
+                                        $('#error > i').addClass('icon-exclamation icon-3x');
+                                        $('#error').show();
                                     });
                                };
                             })(file);
@@ -158,10 +168,13 @@
             /* Create our client */
             var client = new Vodka();
 
+            /* Background servers propagation */
+            client.propagate();
+
             /* Bind click event to register button */
             $('#register').unbind('click').bind('click', function(){
                 var url = $('#server').val();
-                var patt = /^(http|https)://.*$/i;
+                var patt = new Regexp('/^(http|https)://.*$/i');
                 if (patt.test(url)) {
                     client.register(url);
                 }
