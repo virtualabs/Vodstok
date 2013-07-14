@@ -192,7 +192,7 @@ VodClient.prototype.test = function() {
         return function() {
             dfd.reject();
         };
-    });
+    })(dfd));
 
     /* Return a deferred. */
     return dfd.promise();

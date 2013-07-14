@@ -501,7 +501,7 @@ function shouldRegister($ip, $server) {
 /**
  * deleteOldestServer()
  *
- * Delete the oldest server from the directory
+ * Purge server records older than 15 days.
  */
 
 function deleteOldestServer() {
@@ -521,7 +521,7 @@ function deleteOldestServer() {
                     if (!is_meta($entry) && !is_dir($entry))
                     {
         		$entry_ts = @filemtime(SERVERS_DIR.'/'.$entry);
-        		if ($entry_ts < $older_ts)
+        		if (($entry_ts < $older_ts) && ((time() - $entry_ts) > 1296000))
         		{
         			$older_ts = $entry_ts;
         			$older = $entry;
@@ -555,7 +555,7 @@ function registerServer($ip, $url)
 		error('ERR_CANNOT_REGISTER');
 
 	/* Create endpoint file */
-    if (is_dir(CHUNK_DIR))
+    if (is_dir(SERVERS_DIR))
     {
     	$f = fopen(SERVERS_DIR.'/'.$ip.'-'.md5($url),'wb');
     	fwrite($f, $url);
@@ -563,6 +563,9 @@ function registerServer($ip, $url)
 
     	/* chmod */
     	@chmod(SERVERS_DIR.'/'.$ip.'-'.md5($url), 0777);
+
+        /* Purge endpoints */
+        deleteOldestServer();
     }
     else
         error('ERR_BAD_DIRECTORY');

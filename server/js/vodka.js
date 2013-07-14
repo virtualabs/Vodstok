@@ -363,7 +363,6 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
             var metadata = refs.join(',');
             if (metafile) {
                 var c = 'metadata|1.2.4|'+refs.join(',');
-                console.log('metafile !');
             } else {
                 var c = filename+'|1.2.4|'+refs.join(',');
             }
