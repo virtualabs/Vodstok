@@ -133,8 +133,14 @@ div.roll {
 #dlbtn {
     color: #333; !important
     border: solid 3px #ccc;
+    text-align: center;
+    line-height: 40px;
+    cursor: pointer;
 }
+
 
 #dlbtn:hover {
     border-color: #bd0000;
 }
+
+
