@@ -115,13 +115,13 @@ div.roll {
 #success {
     display:none;
     padding: 10px 10px 10px 10px;
-    color: #bd0000;
-    height: 40px;
+    color: #333;
     vertical-align: middle;
 }
 
 #success i {
     float: left;
+    color: #333;
 }
 
 #success_desc {
