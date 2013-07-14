@@ -188,7 +188,11 @@
                 $('#block').show();
                 $('#progressbar').hide();
                 $('#droppy').hide();
-                client.download(document.location.href);
+                client.download(document.location.href).fail(function(){
+                    $('#error_desc').text('Invalid download link.');
+                    $('#error > i').addClass('icon-exclamation icon-3x');
+                    $('#error').show();
+                });
             } else {
                 /* Upload mode, displays the drop zone. */
                 $('#droppy').show();

@@ -43,6 +43,8 @@ Vodka.prototype.getUrl = function() {
  * @param {string} url
  */
 Vodka.prototype.download = function(url) {
+    var dfd = $.Deferred();
+
     /* Parse the requested url, or the current location
      * if url is not provided
      */
@@ -77,13 +79,13 @@ Vodka.prototype.download = function(url) {
             }
             makeDl(content[0], view);
         }).fail(function(){
-            $('#progressbar').hide();
-            $('#dlbtn').hide();
-            $('#action').text('An error occured while downloading your file.');
+            dfd.reject();
         });
     } else {
-        console.log('No file to download');
+        dfd.reject();
     }
+
+    return dfd.promise();
 };
 
 /**
@@ -325,6 +327,14 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
 
     this.progress = 0;
     this.mode = this.MODE_UL;
+
+    /* Clean filename before starting upload */
+    while (filename.indexOf('../')>=0) {
+        filename = filename.replace('../','');
+    }
+    filename = filename.replace(' ','_');
+    filename = filename.replace('/','_');
+    filename = filename.replace('\\','');
 
     /* Split content in chunks */
     var chunks = [];
