@@ -89,7 +89,7 @@ if (isset($_POST['quota']))
 <html>
 <head>
 <title>Vodstok - Install</title>
-<link rel="stylesheet" type="text/css" href="style.css" />
+<link rel="stylesheet" type="text/css" href="css/install.css" />
 
 </head>
 <body>

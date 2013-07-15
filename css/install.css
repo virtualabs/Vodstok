@@ -1,11 +1,11 @@
 /* CSS3 font */
-@font-face { font-family: Russkov; src: url('font/hunter-squared.ttf'); }
+@font-face { font-family: Russkov; src: url('../font/hunter-squared.ttf'); }
 
 a { text-decoration: none; }
-body {  background: url(images/bg3.png); }
+body {  background: url(img/bg3.png); }
 #main { width: 800px; margin: auto auto;}
 #header { display: block; margin-left: 10px; }
-#logo { width: 400px; height: 72px; background-image: url(images/vodstok.png); display: block;}
+#logo { width: 400px; height: 72px; background-image: url(img/vodstok.png); display: block;}
 #install {
 	margin-top: 40px;
 	width: 770px;
@@ -58,13 +58,13 @@ body {  background: url(images/bg3.png); }
 span.ok {
     padding-left: 18px;
     margin-left: 8px;
-    background: url(images/ok.png) no-repeat 0px 0px;
+    background: url(img/ok.png) no-repeat 0px 0px;
 }
 
 span.ko {
     padding-left: 16px;
     margin-left: 8px;
-    background: url(images/ko.png) no-repeat 0px 0px;
+    background: url(img/ko.png) no-repeat 0px 0px;
 }
 
 span.error {
