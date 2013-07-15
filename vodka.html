@@ -177,7 +177,7 @@
             /* Bind click event to register button */
             $('#register').unbind('click').bind('click', function(){
                 var url = $('#server').val();
-                var patt = new Regexp('/^(http|https)://.*$/i');
+                var patt = new RegExp('^(http|https)://.*$', 'i');
                 if (patt.test(url)) {
                     client.register(url);
                 }

@@ -44,7 +44,7 @@ DO NOT MODIFY OR REMOVE THE FOLLOWING LINES
 */
 
 define('QUOTA',QUOTA_MB*1024*1024);
-define('VERSION','1.2.4');
+define('VERSION','1.2.5');
 ";
         fwrite($f, $content);
         fclose($f);
@@ -99,7 +99,7 @@ if (isset($_POST['quota']))
 	</div>
 	<div id="install">
 	    <form action="" method="POST">
-        <div class="block-header"><img src="images/redstar.png" alt="" title=""/>INSTALL</div>
+        <div class="block-header"><img src="css/img/redstar.png" alt="" title=""/>INSTALL</div>
 		<div class="block-content">
             You are about to install your Vodstok node and to be a part of Vodstok's network, thank you. The installation process is quite easy
             and do not require any database settings. However, file access rights must have been correctly configured in order for the install
@@ -164,7 +164,7 @@ if (isset($_POST['quota']))
             </div>
 		</div>
 		<?php if($errors==0) { ?>
-        <div class="block-header"><img src="images/redstar.png" alt="" title=""/>SERVER STORAGE QUOTA</div>
+        <div class="block-header"><img src="css/img/redstar.png" alt="" title=""/>SERVER STORAGE QUOTA</div>
 		<div class="block-content">
             Select the desired disk space allocated to Vodstok<br/>(you may be able to change this later in the configuration file):<br/><br/>
             <label for="quota">Quota :</label>
@@ -183,7 +183,7 @@ if (isset($_POST['quota']))
             <br/><br/>
 		</div>
 		<?php } ?>
-        <div class="block-header"><img src="images/redstar.png" alt="" title=""/>NOTES</div>
+        <div class="block-header"><img src="css/img/redstar.png" alt="" title=""/>NOTES</div>
 		<div class="block-content">
             Be careful, directory listing of <i>chunks</i> and <i>endpoints</i> directories should not be available. Please make sure your 
             Apache configuration allows htaccess files. Another solution consists in disabling the Apache's option Index in your host setup. 
