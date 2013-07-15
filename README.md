@@ -1,15 +1,17 @@
-		VODSTOK version 1.2
-	(Voluntary Distributed Storage Kit)
+Vodstok version 1.2.5 RC2
+=========================
 
 
-1. Introduction
+Introduction
+------------
 
 Vodstok is an opensource and free and viral project that aims
 to provide a collaborative distributed storage to users who
 want to store and share temporarily files on the Internet with
 other users. 
 
-2. Why "Voluntary Distributed Storage" ?
+Why "Voluntary Distributed Storage" ?
+-------------------------------------
 
 The concept of "Voluntary distributed storage" is very simple:
 volunteers agree to let other users store data on a part of 
@@ -23,40 +25,31 @@ to several servers where Vodstok is installed (called "endpoints").
 Endpoints are in fact open storage points where clients can send
 data to store, whatever this data is. 
 
-3. What does Vodstok need to be installed ?
+What does Vodstok need to be installed ?
+----------------------------------------
 
 You only have to own a web server, with PHP version 4.X or 5.X.
-Drop the content of the www/ directory in a directory called
-"vodstok" for instance, and make sure the chunks/ directory is
-not readable on your server. Browse your remote folder and set
-up vodstok.
-
-Get the vodstok client (located in the client/ directory) and 
-declare your endpoint:
-
-$ ./vodstok add http://your.web.server/vodstok/
+Drop the content inside the www directory and make sure the 'chunks'
+and 'endpoints' directory are writeable and not indexable on your server.
+Browse your remote folder and set up vodstok.
 
 Once done, you can upload and download files to your server, and
-share its URL. Other people using vodstok will be able to register
-and use your endpoint for file sharing. If a server goes down, the
-whole network stays available (but in fact many files could have
-been impacted by the shutdown, the actual vodstok client providing
-no redundancy at all).
+share them through dedicated URLs. The whole stuff is completely
+transparent to the user, since an HTML5 client is displayed by
+default for every visitor, making them able to upload/download
+files through your node.
 
-It is also strongly recommended to publish your endpoint (through
-the 'announce' option) and to update the endpoints list on a regular basis
-(thanks to the 'update' option).
+You'd also consider registering other vodstok servers thanks to
+the feature provided on this web client.
 
-5. How to use Vodstok client ?
+Make some noise, spread the word !
+----------------------------------
 
-Vodstok client is pretty simple and still in beta. Server-side
-scripts are very lite and would not be modified later, but our
-client will be updated regularly.
+Vodstok provides:
 
-Many operations can be performed with the provided client:
-- endpoint management (registration, removal, listing, publishing)
-- global capacity assessment
-- file upload
-- file download from a vodstok's URL
+ * On-the-fly encryption
+ * Client to client file sharing
+ * A decentralized voluntary-based storage network
 
-
+Spread the word, make some noise and let your friends
+know about this project !
