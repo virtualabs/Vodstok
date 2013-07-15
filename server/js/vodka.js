@@ -100,53 +100,63 @@ Vodka.prototype.dlFile = function(chunk, key) {
 
     this.dlChunk([chunk], key, true).done((function(inst, dfd, key){
         return function(blob){
-            var infos= blob.split('|');
-            var filename = infos[0];
-            var version = infos[1];
-            var chunks = infos[2].split(',');
-            if (filename != 'metadata') {
-                inst.nchunks = chunks.length;
-                inst.progress = 0;
-                inst.mode = inst.MODE_DL;
+            try {
+                var infos= blob.split('|');
+                var filename = infos[0];
+                var version = infos[1];
+                var chunks = infos[2].split(',');
 
-                /* Display the download button */
-                $('#dlbtn').button({label:'Download &laquo;' + filename + '&raquo;'})
-                    .unbind('click')
-                    .bind('click', (function(inst, filename, dfd){
-                        return function(){
-                            $('#dlbtn').hide();
-                            $('#progressbar').show();
-
-                            /* Launch the download of all chunks. */
-                            inst.dlChunk(chunks, key, true).done((function(filename, dfd){
-                                return function(content){
-                                    dfd.resolve([filename, content]);
-                                };
-                            })(filename, dfd));
-                        };
-                    })(inst, filename, dfd))
-                    .show();
-            } else {
-                /* Retrieve the complete metadata and launch the download of all chunks. */
-                dfd.resolve(inst.dlChunk(chunks, key, false)).done((function(inst, dfd, key){
-                    return function(content){
-                        var infos= content.split('|');
-                        var filename = infos[0];
-                        var version = infos[1];
-                        var chunks = infos[2].split(',');
-
+                if (version.split('.').length != 3) {
+                    dfd.reject();
+                } else {
+                    if (filename != 'metadata') {
                         inst.nchunks = chunks.length;
                         inst.progress = 0;
-                        inst.download_started = true;
+                        inst.mode = inst.MODE_DL;
 
-                        /* Launching the dl of all chunks */
-                        inst.dlChunk(chunks, key, trye).done((function(filename, dfd){
+                        /* Display the download button */
+                        //$('#dlbtn').button({label:'Download &laquo;' + filename + '&raquo;'})
+                        $('#dlbtn').html('Download &laquo;' + filename + '&raquo;')
+                            .unbind('click')
+                            .bind('click', (function(inst, filename, dfd){
+                                return function(){
+                                    $('#dlbtn').hide();
+                                    $('#progressbar').show();
+
+                                    /* Launch the download of all chunks. */
+                                    inst.dlChunk(chunks, key, true).done((function(filename, dfd){
+                                        return function(content){
+                                            dfd.resolve([filename, content]);
+                                        };
+                                    })(filename, dfd));
+                                };
+                            })(inst, filename, dfd))
+                            .show();
+                    } else {
+                        /* Retrieve the complete metadata and launch the download of all chunks. */
+                        dfd.resolve(inst.dlChunk(chunks, key, false)).done((function(inst, dfd, key){
                             return function(content){
-                                dfd.resolve([filename, content]);
+                                var infos= content.split('|');
+                                var filename = infos[0];
+                                var version = infos[1];
+                                var chunks = infos[2].split(',');
+
+                                inst.nchunks = chunks.length;
+                                inst.progress = 0;
+                                inst.download_started = true;
+
+                                /* Launching the dl of all chunks */
+                                inst.dlChunk(chunks, key, trye).done((function(filename, dfd){
+                                    return function(content){
+                                        dfd.resolve([filename, content]);
+                                    };
+                                })(filename, dfd));
                             };
-                        })(filename, dfd));
-                    };
-                })(this, dfd, key));
+                        })(this, dfd, key));
+                    }
+                }
+            } catch (err) {
+                dfd.reject();
             }
         };
     })(this, dfd, key)).fail((function(inst, dfd){
