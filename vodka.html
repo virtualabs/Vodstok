@@ -31,6 +31,12 @@
         </div>
         <div id="droppy" ondragover="return false">
         </div>
+        <div id="droppy_old">
+            <div id="droppy_old_toggle"><i class="icon-upload"></i>&nbsp;or do it the old way =)</div>
+            <div id="droppy_old_content">
+                Select file to upload: <input type="file" id="droppy_file"/><br/>
+            </div>
+        </div>
         <div id="about">
             <h2>What is Vodstok ?</h2>
             <p>Vodstok was primarily developped as a <i>voluntary distributed storage kit</i> that anybody may use to be part of a acentered storage network. More than that, it is now an easy-to-use platform to share information (your files, pictures, documents, whatever you want) freely and securely.</p>
@@ -73,6 +79,61 @@
     <script src="js/crypto/format-hex.js" language="javascript"></script>
     <script src="js/vodka.js" language="javascript"></script>
     <script>
+        function uploadFile(file) {
+            var fr = new FileReader();
+            fr.onload = (function(file){
+                return function(e){
+                    var client = new Vodka();
+
+                    /* Show progressbar in indeterminate mode. */
+                    $('#bar').css('width','100%').text('');
+                    var overlay = $('<div/>').addClass('roll')
+                        .attr('id', 'overlay');
+                    $('#bar').append(overlay);
+                    $('#overlay').addClass('roll');
+
+                    /* Add some text explaining the situation ... */
+                    $('#action').text('Querying remote servers ...');
+                    $('#block').show();
+                    $('#droppy').hide();
+                    $('#success').hide();
+                    $('#droppy_old').hide();
+                    $('#error').hide();
+
+                    /* And get endpoints from the current endpoint's DB */
+                    client.queryEndpoints().done(function(){
+                        /* Once done, start the upload */
+                        $('#action').text("Uploading "+file.name+" ...");
+                        client.uploadFile(file.name, file, generate_key(), false).done(function(res){
+                            $('#linkbox').val(res);
+                            $('#success > i').addClass('icon-share icon-3x');
+                            $('#success').show();
+                            $('#error').hide();
+                            $('#droppy').show();
+                            $('#droppy_old').show();
+                            $('#block').hide();
+                            $('#action').text('');
+                        }).fail(function(){
+                            $('#block').hide();
+                            $('#error_desc').text('Error while uploading file.');
+                            $('#error > i').addClass('icon-exclamation icon-3x');
+                            $('#error').show();
+                            /* Upload failed, show an error. */
+                        });
+                    }).fail(function(){
+                        /* Endpoint query failed, shows an error. */
+                        $('#block').hide();
+                        $('#error_desc').text('Unable to query servers.');
+                        $('#error > i').addClass('icon-exclamation icon-3x');
+                        $('#error').show();
+                    });
+                };
+            })(file);
+
+            /* Read uploaded file. */
+            fr.readAsBinaryString(file);
+        }
+        
         $(document).ready(function(){
             jQuery.event.props.push('dataTransfer');
 
@@ -89,6 +150,12 @@
                 orientation: 'vertical',
                 affix: 'right center'
             }).show();
+
+            $('#droppy_old_toggle').bind('click', function(){
+                $('#droppy').attr('disabled','true');
+                $('#droppy_old_toggle').hide();
+                $('#droppy_old_content').show();
+            });
 
             $('#droppy').on({
                 dragenter: function(e) {
@@ -112,58 +179,11 @@
                             e.stopPropagation();
 
                             /* A file was dragged into the drop zone, take only
-                               the first one ! */
+                             * the first one !
+                             */
+
                             var file = e.originalEvent.dataTransfer.files[0];
-                            var fr = new FileReader();
-                            fr.onload = (function(file){
-                               return function(e){
-                                    var client = new Vodka();
-
-                                    /* Show progressbar in indeterminate mode. */
-                                    $('#bar').css('width','100%').text('');
-                                    var overlay = $('<div/>').addClass('roll')
-                                        .attr('id', 'overlay');
-                                    $('#bar').append(overlay);
-                                    $('#overlay').addClass('roll');
-
-                                    /* Add some text explaining the situation ... */
-                                    $('#action').text('Querying remote servers ...');
-                                    $('#block').show();
-                                    $('#droppy').hide();
-                                    $('#success').hide();
-                                    $('#error').hide();
-
-                                    /* And get endpoints from the current endpoint's DB */
-                                    client.queryEndpoints().done(function(){
-                                        /* Once done, start the upload */
-                                        $('#action').text("Uploading "+file.name+" ...");
-                                        client.uploadFile(file.name, file, generate_key(), false).done(function(res){
-                                                $('#linkbox').val(res);
-                                                $('#success > i').addClass('icon-share icon-3x');
-                                                $('#success').show();
-                                                $('#error').hide();
-                                                $('#droppy').show();
-                                                $('#block').hide();
-                                                $('#action').text('');
-                                        }).fail(function(){
-                                            $('#block').hide();
-                                            $('#error_desc').text('Error while uploading file.');
-                                            $('#error > i').addClass('icon-exclamation icon-3x');
-                                            $('#error').show();
-                                            /* Upload failed, show an error. */
-                                        });
-                                    }).fail(function(){
-                                        /* Endpoint query failed, shows an error. */
-                                        $('#block').hide();
-                                        $('#error_desc').text('Unable to query servers.');
-                                        $('#error > i').addClass('icon-exclamation icon-3x');
-                                        $('#error').show();
-                                    });
-                               };
-                            })(file);
-
-                            /* Read uploaded file. */
-                            fr.readAsBinaryString(file);
+                            uploadFile(file);
                         }
                     }}
                 }).hide();
@@ -183,12 +203,19 @@
                 }
             });
 
+            $('#droppy_file').on('change', function(evt) {
+                var file = evt.target.files[0];
+                uploadFile(file);
+            });
+
+
             /* Download mode ? */
             if (document.location.hash) {
                 /* Display download components */
                 $('#block').show();
                 $('#progressbar').hide();
                 $('#droppy').hide();
+                $('#droppy_old').hide();
                 client.download(document.location.href).fail(function(){
                     $('#block').hide();
                     $('#error_desc').text('Invalid download link.');
@@ -198,6 +225,7 @@
             } else {
                 /* Upload mode, displays the drop zone. */
                 $('#droppy').show();
+                $('#droppy_old').show();
                 $('#block').hide();
                 $('#progressbar').find('div').text('').css('width', '0px');
                 $('#droppy').text('Drop a file here to upload');
