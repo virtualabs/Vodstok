@@ -159,6 +159,7 @@ div.roll {
 }
 
 #droppy_old {
+    display: none;
     line-height: 22px;
     font-size: 18px;
     margin-top: 12px;
