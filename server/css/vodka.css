@@ -24,6 +24,7 @@ body { background: url(img/bg3.png); }
 }
 
 #error {
+    display: none;
     padding: 10px 10px 10px 10px;
     background: #bd0000;
     color: #eee;
