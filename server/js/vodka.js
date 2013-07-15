@@ -392,7 +392,7 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
                     return function(cid) {
                         inst.progress = this.nchunks;
                         inst.events.publish('progress', [inst.progress]);
-                        dfd.resolve(cid[0]+'#'+key+'-'+cid[1]);
+                        dfd.resolve(cid[0]+'?'+ (new Date().getTime()) +'#'+key+'-'+cid[1]);
                     };
                 })(inst, dfd)).fail((function(inst, dfd){
                     return function() {
