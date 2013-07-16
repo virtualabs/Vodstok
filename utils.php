@@ -462,7 +462,7 @@ function shouldRegister($ip, $server) {
         if ($dir !== false)
         {
         	$older = '';
-        	$limit = time()-3600;
+        	$limit = time()-10;
             $used = 0;
             $hash = md5($server);
             while (false !== ($entry = readdir($dir))) {
