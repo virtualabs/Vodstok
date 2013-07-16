@@ -495,7 +495,7 @@ Vodka.prototype.register = function(url) {
  */
 Vodka.prototype.propagate = function(url) {
     /* Query endpoints */
-    this.queryEndpoints(null, true).done((function(inst){
+    this.queryEndpoints().done((function(inst){
         return function() {
             /* Launch a serie of requests:
              * - update current endpoints list
