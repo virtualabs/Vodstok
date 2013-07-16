@@ -44,8 +44,7 @@
             typedArray instanceof Int32Array ||
             typedArray instanceof Uint32Array ||
             typedArray instanceof Float32Array ||
-            typedArray instanceof Float64Array ||
-            typedArray instanceof DataView
+            typedArray instanceof Float64Array
         ) {
             typedArray = new Uint8Array(typedArray.buffer, typedArray.byteOffset, typedArray.byteLength);
         }

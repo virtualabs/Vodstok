@@ -26,7 +26,7 @@ var Vodka = function() {
  * @return {object} This endpoint's client
  */
 Vodka.prototype.getUrl = function() {
-    var uri = new Uri(url);
+    var uri = new Uri(document.location.href);
     var ep_uri = uri.protocol()+'://'+uri.host();
     if (uri.port()) {
         ep_uri += ':'+uri.port()
@@ -382,9 +382,9 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
             /* get metadata */
             var metadata = refs.join(',');
             if (metafile) {
-                var c = 'metadata|1.2.4|'+refs.join(',');
+                var c = 'metadata|1.2.5|'+refs.join(',');
             } else {
-                var c = filename+'|1.2.4|'+refs.join(',');
+                var c = filename+'|1.2.5|'+refs.join(',');
             }
             console.log(c);
             if (c.length > chunk_size) {
@@ -467,7 +467,7 @@ Vodka.prototype.uploadChunk = function(chunk, key) {
  * @param {string} url Url to register
  */
 Vodka.prototype.register = function(url) {
-    var client = new VodClient(this.getURL());
+    var client = new VodClient(this.getUrl());
     if (client) {
         client.register(url).done((function(inst){
             return function() {
