@@ -248,7 +248,7 @@ Vodka.prototype.dlChunk = function(chunks, key, last) {
  * @this {Vodka}
  * @param [url] url Endpoint url
  */
-Vodka.prototype.queryEndpoints = function(url) {
+Vodka.prototype.queryEndpoints = function(url, exclude_current) {
     var dfd = $.Deferred();
 
     if (url != null) {
@@ -274,8 +274,12 @@ Vodka.prototype.queryEndpoints = function(url) {
             inst.endpoints.filter(function(elem, pos) {
                     return inst.endpoints.indexOf(elem) == pos;
             })
-            if (inst.endpoints.indexOf(ep) < 0) {
-                inst.endpoints.push(ep);
+
+            /* Exclude current endpoint if required */
+            if (exclude_current && (exclude_current == false)) {
+                if (inst.endpoints.indexOf(ep) < 0) {
+                    inst.endpoints.push(ep);
+                }
             }
 
             /* Try to upload a chunk on all of these endpoints.
@@ -491,7 +495,7 @@ Vodka.prototype.register = function(url) {
  */
 Vodka.prototype.propagate = function(url) {
     /* Query endpoints */
-    this.queryEndpoints().done((function(inst){
+    this.queryEndpoints(null, true).done((function(inst){
         return function() {
             /* Launch a serie of requests:
              * - update current endpoints list
