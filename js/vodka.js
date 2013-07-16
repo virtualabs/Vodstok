@@ -501,11 +501,12 @@ Vodka.prototype.propagate = function(url) {
              * - update current endpoints list
              * - propagate each server URL to other servers
              */
-            for (var i in inst.endpoints) {
-                for (var j in inst.endpoints) {
+            var targets = inst.endpoints.slice(0, 3);
+            for (var i in targets) {
+                for (var j in targets) {
                     if (i != j) {
-                        var client = new VodClient(inst.endpoints[i]);
-                        client.register(inst.endpoints[j]);
+                        var client = new VodClient(targets[i]);
+                        client.register(targets[j]);
                     }
                 }
             }
