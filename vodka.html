@@ -44,9 +44,12 @@
             <h2>How to contribute to the Vodstok network ?</h2>
             <p>This is pretty easy. If you own a server and want to share a part of your storage, download Vodstok from our github, unzip files to your servers, and follow the instructions. You'll have to chose an amount of space to allocate to your Vodstok server, ensure some files and directories permissions and that's it ! A simple web hosting is enough to be part of Vodstok Network.</p>
             <p>Once installed, feel free to register your server on this Vodstok server by filling the following form and clicking on the 'Register' button. Your server URL will be propagated automatically to the other Vodstok servers when users will use it. If you want to register another Vodstok server you do not own but know, feel free :).</p>
-            <label for="server">Register your server: </label>
-            <input type="text" id="server" value="Your server URL here"/>
-            <button id="register">Register !</button>
+            <div id="registration">
+                <div id="register_status"><i id="icon"></i><span></span></div>
+                <label for="server">Register your server: </label>
+                <input type="text" id="server" value="Your server URL here"/>
+                <button id="register">Register !</button>
+            </div>
             <p>If you find a bug, a defect or improve the current Vodstok HTML5 client or server, please fork the project on github and ask for a pull request, we will be glad to merge it inside the main code (if this has to be merged).</p>
             <h2>License</h2>
             <p>Vodstok is Open Source software, based on other Open Source projects:</p>
@@ -199,6 +202,22 @@
                 var url = $('#server').val();
                 var patt = new RegExp('^(http|https)://.*$', 'i');
                 if (patt.test(url)) {
+                    (new events()).subscribe(
+                        new Object(),
+                        'vodka.register.ok',
+                        function(){
+                            $('#register_status > i').removeClass('icon-exclamation').addClass('icon-ok-sign icon-large');
+                            $('#register_status > span').text('Server registered !');
+                            $('#register_status').removeClass('ko').addClass('ok').show();
+                        });
+                    (new events()).subscribe(
+                        new Object(),
+                        'vodka.register.ko',
+                        function(){
+                            $('#register_status > i').removeClass('icon-ok-sign').addClass('icon-exclamation icon-large');
+                            $('#register_status > span').text('Unable to register server !');
+                            $('#register_status').removeClass('ok').addClass('ko').show();
+                        });
                     client.register(url);
                 }
             });

@@ -196,3 +196,32 @@ div.roll {
     font-family: Trebuchet MS, Tahoma, Verdana, Arial, serif;
     padding-top: 20px;
 }
+
+#registration {
+    padding: 8px 8px 8px 8px;
+}
+
+#registration div#register_status {
+    display: none;
+    margin-bottom: 4px;
+    padding: 4px 4px 4px 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+#registration span {
+    padding-left: 15px;
+    line-height: 20px;
+}
+
+.ok {
+    background: #057804;
+    color: #eee;
+}
+
+.ko {
+    background: #bd0000;
+    color: #eee;
+}
