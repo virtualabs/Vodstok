@@ -479,12 +479,14 @@ function shouldRegister($ip, $server) {
                                 closedir($dir);
         						return false;
                             }
-        				}
+                        }
+                        /*
         				if ($ep_==$hash)
                         {
                             closedir($dir);
                             return false;
                         }
+                        */
                     }
             }
         	closedir($dir);
