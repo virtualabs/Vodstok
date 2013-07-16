@@ -471,7 +471,7 @@ function shouldRegister($ip, $server) {
                     	$meta = @explode('-',$entry);
                     	$ip_ = $meta[0];
                     	$ep_ = $meta[1];
-                    	if ($ip_===$ip)
+                    	if ($ip_===md5($ip))
                     	{
         					$entry_ts = @filemtime(SERVERS_DIR.'/'.$entry);
         					if ($entry_ts >= $limit)
@@ -557,12 +557,12 @@ function registerServer($ip, $url)
 	/* Create endpoint file */
     if (is_dir(SERVERS_DIR))
     {
-    	$f = fopen(SERVERS_DIR.'/'.$ip.'-'.md5($url),'wb');
+    	$f = fopen(SERVERS_DIR.'/'.md5($ip).'-'.md5($url),'wb');
     	fwrite($f, $url);
     	fclose($f);
 
     	/* chmod */
-    	@chmod(SERVERS_DIR.'/'.$ip.'-'.md5($url), 0777);
+    	@chmod(SERVERS_DIR.'/'.md5($ip).'-'.md5($url), 0777);
 
         /* Purge endpoints */
         deleteOldestServer();
