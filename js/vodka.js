@@ -13,6 +13,7 @@ var Vodka = function() {
     this.nchunks = 0;
     this.progress = 0;
     this.mode = this.MODE_WAIT;
+    this.endpoints = [];
 
     this.events = new events();
     this.events.subscribe(this, 'progress', this.onProgress);
@@ -248,7 +249,7 @@ Vodka.prototype.dlChunk = function(chunks, key, last) {
  * @this {Vodka}
  * @param [url] url Endpoint url
  */
-Vodka.prototype.queryEndpoints = function(url, exclude_current) {
+Vodka.prototype.queryEndpoints = function(url, depth) {
     var dfd = $.Deferred();
 
     if (url != null) {
@@ -264,66 +265,101 @@ Vodka.prototype.queryEndpoints = function(url, exclude_current) {
         ep_uri += document.location.pathname;
     }
 
+    if (this.endpoints.indexOf(ep_uri) < 0) {
+        this.endpoints.push(ep_uri);
+    }
+
     /* Query endpoint for other endpoints */
     var client = new VodClient(ep_uri);
     client.endpoints().done((function(inst, ep, jq){
         return function(endpoints) {
 
-            /* Add current endpoint */
-            inst.endpoints = endpoints;
-            inst.endpoints.filter(function(elem, pos) {
-                    return inst.endpoints.indexOf(elem) == pos;
-            })
-
-            /* Exclude current endpoint if required */
-            if (exclude_current && (exclude_current == false)) {
-                if (inst.endpoints.indexOf(ep) < 0) {
-                    inst.endpoints.push(ep);
-                }
+            /* If max depth not reached */
+            if (depth == null) {
+                depth = 0;
             }
-
-            /* Try to upload a chunk on all of these endpoints.
-             * If it fails, remove endpoints from list.
-             */
-            var deferreds = [];
-            var random_data = randomChunk(16);
-            for (var i in endpoints) {
-                var c = new VodClient(endpoints[i]);
-                var dfd_ = jq.Deferred();
-                c.uploadChunk(random_data).fail((function(inst, ep){
-                    return function() {
-                        inst.endpoints.splice(inst.endpoints.indexOf(ep),1);
-                    };
-                })(inst, endpoints[i])).done((function(inst, ep){
-                    return function(cid) {
-                        var patt = /^[0-9a-f]{32}$/i;
-                        if (!patt.test(cid)) {
-                            inst.endpoints.splice(inst.endpoints.indexOf(ep), 1);
-                        }
-                    };
-                })(inst, endpoints[i])).always((function(dfd){
-                    return function(){
-                        dfd.resolve();
-                    };
-                })(dfd_));
-                deferreds.push(dfd_.promise());
-            }
-            jq.when.apply(jq, deferreds).then((function(inst, dfd){
-                return function(){
-                    console.log('done');
-                    if (inst.endpoints.length == 0) {
-                        dfd.reject();
-                    } else {
-                        dfd.resolve(inst.endpoints);
+            if (depth < 3) {
+                var deferreds = [];
+                for (var i in endpoints) {
+                    if (inst.endpoints.indexOf(endpoints[i]) < 0) {
+                        inst.endpoints.push(endpoints[i]);
                     }
-                };
-            })(inst, dfd));
+
+                    var dfd_ = jq.Deferred();
+                    inst.queryEndpoints(endpoints[i], depth + 1).always(
+                        (function(dfd){
+                            return function(){
+                                dfd.resolve();
+                            };
+                        })(dfd_)
+                    );
+                    deferreds.push(dfd_.promise());
+                }
+                jq.when.apply(jq, deferreds).then((function(inst, dfd){
+                    return function() {
+                        dfd.resolve(inst.endpoints);
+                    };
+                })(this, dfd));
+            } else {
+                dfd.resolve();
+            }
         };
     })(this, ep_uri, $)).fail((function(dfd){
         return function(){
             dfd.reject();
         };
     })(dfd));
+
+    /* Returns a deferred */
+    return dfd.promise();
+};
+
+/**
+ * Check discovered servers
+ *
+ * @this {Vodka}
+ */
+Vodka.prototype.checkServers = function() {
+    var dfd = $.Deferred();
+
+    var deferreds = [];
+    var random_data = randomChunk(16);
+    this.nchunks = this.endpoints.length;
+    this.progress = 0;
+    console.log(this.endpoints);
+    for (var i in this.endpoints) {
+        var c = new VodClient(this.endpoints[i]);
+        var dfd_ = $.Deferred();
+        c.uploadChunk(random_data).fail((function(inst, ep){
+            return function() {
+                inst.endpoints.splice(inst.endpoints.indexOf(ep),1);
+            };
+        })(this, this.endpoints[i])).done((function(inst, ep){
+            return function(cid) {
+                var patt = /^[0-9a-f]{32}$/i;
+                if (!patt.test(cid)) {
+                    inst.endpoints.splice(inst.endpoints.indexOf(ep), 1);
+                }
+            };
+        })(this, this.endpoints[i])).always((function(inst, dfd){
+            return function(){
+                inst.progress++;
+                dfd.resolve();
+                inst.events.publish('progress', [inst.progress]);
+            };
+        })(this, dfd_));
+        deferreds.push(dfd_.promise());
+    }
+    $.when.apply($, deferreds).then((function(inst, dfd){
+        return function(){
+            console.log('done');
+            if (inst.endpoints.length == 0) {
+                dfd.reject();
+            } else {
+                dfd.resolve(inst.endpoints);
+            }
+        };
+    })(this, dfd));
 
     /* Returns a deferred */
     return dfd.promise();
@@ -436,6 +472,7 @@ Vodka.prototype.uploadChunk = function(chunk, key) {
 
     /* Check if we have some endpoints tested */
     if (this.endpoints && this.endpoints.length > 0) {
+
         /* Pick a random endpoint */
         var endpoint_url = choice(this.endpoints);
         var client = new VodClient(endpoint_url);
@@ -497,19 +534,19 @@ Vodka.prototype.propagate = function(url) {
     /* Query endpoints */
     this.queryEndpoints().done((function(inst){
         return function() {
-            /* Launch a serie of requests:
-             * - update current endpoints list
-             * - propagate each server URL to other servers
-             */
-            var targets = inst.endpoints.slice(0, 3);
-            for (var i in targets) {
-                for (var j in targets) {
-                    if (i != j) {
-                        var client = new VodClient(targets[i]);
-                        client.register(targets[j]);
+            inst.checkServers().done((function(inst){
+                return function(endpoints) {
+                    targets = endpoints.slice(0,3);
+                    for (var i in targets) {
+                        for (var j in targets) {
+                            if (i != j) {
+                                var client = new VodClient(targets[i]);
+                                client.register(targets[j]);
+                            }
+                        }
                     }
-                }
-            }
+                };
+            })(inst));
         };
     })(this));
 };
