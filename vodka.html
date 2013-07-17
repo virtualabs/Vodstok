@@ -96,7 +96,7 @@
                     $('#overlay').addClass('roll');
 
                     /* Add some text explaining the situation ... */
-                    $('#action').text('Querying remote servers ...');
+                    $('#action').text('Discovering other servers ...');
                     $('#block').show();
                     $('#droppy').hide();
                     $('#success').hide();
@@ -105,28 +105,31 @@
 
                     /* And get endpoints from the current endpoint's DB */
                     client.queryEndpoints().done(function(){
-                        /* Once done, start the upload */
-                        $('#action').text("Uploading "+file.name+" ...");
-                        client.uploadFile(file.name, file, generate_key(), false).done(function(res){
-                            $('#linkbox').val(res);
-                            $('#success > i').addClass('icon-share icon-3x');
-                            $('#success').show();
-                            $('#error').hide();
-                            $('#droppy').show();
-                            $('#droppy_old').show();
-                            $('#block').hide();
-                            $('#action').text('');
-                        }).fail(function(){
-                            $('#block').hide();
-                            $('#error_desc').text('Error while uploading file.');
-                            $('#error > i').addClass('icon-exclamation icon-3x');
-                            $('#error').show();
-                            /* Upload failed, show an error. */
+                        $('#action').text("Testing "+client.endpoints.length+" server(s) ...");
+                        client.checkServers().done(function(){
+                            /* Once done, start the upload */
+                            $('#action').text("Uploading "+file.name+" ...");
+                            client.uploadFile(file.name, file, generate_key(), false).done(function(res){
+                                $('#linkbox').val(res);
+                                $('#success > i').addClass('icon-share icon-3x');
+                                $('#success').show();
+                                $('#error').hide();
+                                $('#droppy').show();
+                                $('#droppy_old').show();
+                                $('#block').hide();
+                                $('#action').text('');
+                            }).fail(function(){
+                                $('#block').hide();
+                                $('#error_desc').text('Error while uploading file.');
+                                $('#error > i').addClass('icon-exclamation icon-3x');
+                                $('#error').show();
+                                /* Upload failed, show an error. */
+                            });
                         });
                     }).fail(function(){
                         /* Endpoint query failed, shows an error. */
                         $('#block').hide();
-                        $('#error_desc').text('Unable to query servers.');
+                        $('#error_desc').text('Unable to discover servers.');
                         $('#error > i').addClass('icon-exclamation icon-3x');
                         $('#error').show();
                     });
