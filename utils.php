@@ -522,12 +522,12 @@ function deleteOldestServer() {
             while (false !== ($entry = readdir($dir))) {
                     if (!is_meta($entry) && !is_dir($entry))
                     {
-        		$entry_ts = @filemtime(SERVERS_DIR.'/'.$entry);
-        		if (($entry_ts < $older_ts) && ((time() - $entry_ts) > 1296000))
-        		{
-        			$older_ts = $entry_ts;
-        			$older = $entry;
-        		}
+                        $entry_ts = @filemtime(SERVERS_DIR.'/'.$entry);
+                        if (($entry_ts < $older_ts) && ((time() - $entry_ts) > 1296000))
+                        {
+                            $older_ts = $entry_ts;
+                            $older = $entry;
+                        }
                     }
             }
         	closedir($dir);
@@ -599,9 +599,9 @@ function listRandomServers()
             }
         	closedir($dir);
 
-            /* shuffle and keep only the 5 first entries */
+            /* shuffle and keep only the 10 first entries */
             shuffle($servers);
-            die(implode(',',array_slice($servers,0,5)));
+            die(implode(',',array_slice($servers,0,10)));
         }
     }
 
