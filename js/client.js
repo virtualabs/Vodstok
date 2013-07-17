@@ -92,7 +92,7 @@ VodClient.prototype.endpoints = function() {
                 dfd.reject();
             };
         })(dfd),
-        timeout: 10000
+        timeout: 2000
     });
 
     /* Returns a deferred. */
