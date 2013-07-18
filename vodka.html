@@ -139,6 +139,11 @@
 
             /* Download mode ? */
             if (document.location.hash) {
+                $('#logo').bind('click', function() {
+                    document.location = client.getUrl();
+                }).css('cursor','pointer');
+                $('#loading').hide();
+                $('#page').show();
                 $('#block').show();
                 $('#progressbar').hide();
                 $('#droppy').hide();
