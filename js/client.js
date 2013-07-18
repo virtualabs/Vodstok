@@ -63,7 +63,7 @@ VodClient.prototype.uploadChunk = function(content) {
                 dfd.reject();
             };
         })(dfd),
-        timeout: 10000
+        timeout: 2000
     });
 
     /* Returns a deferred. */
@@ -121,7 +121,7 @@ VodClient.prototype.stats = function() {
                 dfd.reject();
             };
         })(dfd),
-        timeout: 10000
+        timeout: 2000
     });
 
     /* Returns a deferred. */
@@ -156,7 +156,7 @@ VodClient.prototype.register = function(url) {
                 dfd.reject();
             };
         })(dfd),
-        timeout: 5000
+        timeout: 2000
     });
 
     /* Returns a deferred. */

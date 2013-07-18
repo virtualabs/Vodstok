@@ -3,12 +3,15 @@
  *
  * @param [url] url Optional URL.
  */
-var Vodka = function() {
+var Vodka = function(url) {
 
     /* CONSTANTS */
     this.MODE_WAIT = 0;
     this.MODE_DL = 1;
     this.MODE_UL = 2;
+    this.MODE_DISCOVERY = 3;
+
+    this.baseUrl = url;
 
     this.nchunks = 0;
     this.progress = 0;
@@ -17,6 +20,14 @@ var Vodka = function() {
 
     this.events = new events();
     this.events.subscribe(this, 'progress', this.onProgress);
+
+    /* If TMService is already instancied, return instance (Singleton) */
+    if (arguments.callee.instance) {
+        return arguments.callee.instance;
+    }
+    else {
+        arguments.callee.instance = this;
+    }
 
 };
 
@@ -27,7 +38,12 @@ var Vodka = function() {
  * @return {object} This endpoint's client
  */
 Vodka.prototype.getUrl = function() {
-    var uri = new Uri(document.location.href);
+    console.log(this.baseUrl);
+    if (this.baseUrl == null) {
+        var uri = new Uri(document.location.href);
+    } else {
+        var uri = new Uri(this.baseUrl);
+    }
     var ep_uri = uri.protocol()+'://'+uri.host();
     if (uri.port()) {
         ep_uri += ':'+uri.port()
@@ -36,6 +52,35 @@ Vodka.prototype.getUrl = function() {
     return ep_uri;
 };
 
+/**
+ * Discover existing nodes:
+ * 1. query endpoints to identify servers
+ * 2. check potential servers
+ * 3. when enough servers found, send the 'vodka.network.ok' event.
+ *
+ * On error, send the 'vodka.network.failed' event.
+ */
+Vodka.prototype.discover = function() {
+    this.mode = this.MODE_DISCOVERY;
+    this.events.publish('vodka.network.discover');
+    this.queryEndpoints().done((function(inst){
+        return function(endpoints) {
+            inst.events.publish('vodka.network.check', [endpoints.length]);
+            /* Once the endpoints retrieved, check them */
+            inst.checkServers().done((function(inst){
+                if (inst.endpoints.length >= 3) {
+                    inst.events.publish('vodka.network.ok');
+                } else {
+                    inst.events.publish('vodka.network.ko');
+                }
+            })(inst));
+        };
+    })(this)).fail((function(inst){
+        return function() {
+            inst.events.publish('vodka.network.ko');
+        };
+    })(this));
+};
 
 /**
  * Launch a download
@@ -260,9 +305,8 @@ Vodka.prototype.queryEndpoints = function(url, depth) {
         }
         ep_uri += uri.path();
     } else {
-        var ep_uri = document.location.protocol+'//';
-        ep_uri += document.location.host;
-        ep_uri += document.location.pathname;
+        var ep_uri = this.getUrl();
+        console.log(ep_uri);
     }
 
     if (this.endpoints.indexOf(ep_uri) < 0) {
@@ -278,13 +322,13 @@ Vodka.prototype.queryEndpoints = function(url, depth) {
             if (depth == null) {
                 depth = 0;
             }
-            if (depth < 3) {
+            if (depth < 2) {
                 var deferreds = [];
                 for (var i in endpoints) {
                     if (inst.endpoints.indexOf(endpoints[i]) < 0) {
                         inst.endpoints.push(endpoints[i]);
                     }
-
+                    inst.events.publish('vodka.network.discover', [inst.endpoints.length]);
                     var dfd_ = jq.Deferred();
                     inst.queryEndpoints(endpoints[i], depth + 1).always(
                         (function(dfd){
@@ -297,9 +341,13 @@ Vodka.prototype.queryEndpoints = function(url, depth) {
                 }
                 jq.when.apply(jq, deferreds).then((function(inst, dfd){
                     return function() {
+                        /* Keep only 10 endpoints max */
+                        if (inst.endpoints.length > 10) {
+                            inst.endpoints.slice(0,10);
+                        }
                         dfd.resolve(inst.endpoints);
                     };
-                })(this, dfd));
+                })(inst, dfd));
             } else {
                 dfd.resolve();
             }
@@ -324,9 +372,9 @@ Vodka.prototype.checkServers = function() {
 
     var deferreds = [];
     var random_data = randomChunk(16);
-    this.nchunks = this.endpoints.length;
-    this.progress = 0;
-    console.log(this.endpoints);
+    this.checkedServers = 0;
+    this.originalNbServers = this.endpoints.length;
+
     for (var i in this.endpoints) {
         var c = new VodClient(this.endpoints[i]);
         var dfd_ = $.Deferred();
@@ -343,16 +391,15 @@ Vodka.prototype.checkServers = function() {
             };
         })(this, this.endpoints[i])).always((function(inst, dfd){
             return function(){
-                inst.progress++;
+                inst.checkedServers++;
                 dfd.resolve();
-                inst.events.publish('progress', [inst.progress]);
+                inst.events.publish('vodka.network.progress', [inst.checkedServers, inst.originalNbServers]);
             };
         })(this, dfd_));
         deferreds.push(dfd_.promise());
     }
     $.when.apply($, deferreds).then((function(inst, dfd){
         return function(){
-            console.log('done');
             if (inst.endpoints.length == 0) {
                 dfd.reject();
             } else {
@@ -531,24 +578,17 @@ Vodka.prototype.register = function(url) {
  * This must be executed only once.
  */
 Vodka.prototype.propagate = function(url) {
-    /* Query endpoints */
-    this.queryEndpoints().done((function(inst){
-        return function() {
-            inst.checkServers().done((function(inst){
-                return function(endpoints) {
-                    targets = endpoints.slice(0,3);
-                    for (var i in targets) {
-                        for (var j in targets) {
-                            if (i != j) {
-                                var client = new VodClient(targets[i]);
-                                client.register(targets[j]);
-                            }
-                        }
-                    }
-                };
-            })(inst));
-        };
-    })(this));
+    if (this.endpoints.length > 3) {
+        targets = this.endpoints.slice(0,3);
+        for (var i in targets) {
+            for (var j in targets) {
+                if (i != j) {
+                    var client = new VodClient(targets[i]);
+                    client.register(targets[j]);
+                }
+            }
+        }
+    }
 };
 
 /**

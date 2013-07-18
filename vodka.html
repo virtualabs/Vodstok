@@ -7,9 +7,16 @@
 </head>
 <body>
     <!-- Main interface -->
-    <a href="https://github.com/virtualabs/Vodstok"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_red_aa0000.png" alt="Fork me on GitHub"></a>
+    <div id="loading">
+        <div id="vodstok"></div>
+        <div id="progress">
+            <div id="bar"></div>
+        </div>
+        <div id="status">Discovering nodes ...</div>
+    </div>
     <div id="page">
-        <a href="" border="0"><div id="logo"></div></a>
+    <a href="https://github.com/virtualabs/Vodstok"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_red_aa0000.png" alt="Fork me on GitHub"></a>
+        <div id="logo"></div>
         <div id="block">
             <div><i id="action-icon"></i><span id="action"></span></div>
             <div id="progress">
@@ -84,10 +91,8 @@
     <script>
         function uploadFile(file) {
             var fr = new FileReader();
-            fr.onload = (function(file){
+            fr.onload = (function(file, client){
                 return function(e){
-                    var client = new Vodka();
-
                     /* Show progressbar in indeterminate mode. */
                     $('#bar').css('width','100%').text('');
                     var overlay = $('<div/>').addClass('roll')
@@ -96,144 +101,44 @@
                     $('#overlay').addClass('roll');
 
                     /* Add some text explaining the situation ... */
-                    $('#action').text('Discovering other servers ...');
                     $('#block').show();
                     $('#droppy').hide();
                     $('#success').hide();
                     $('#droppy_old').hide();
                     $('#error').hide();
 
-                    /* And get endpoints from the current endpoint's DB */
-                    client.queryEndpoints().done(function(){
-                        $('#action').text("Testing "+client.endpoints.length+" server(s) ...");
-                        client.checkServers().done(function(){
-                            /* Once done, start the upload */
-                            $('#action').text("Uploading "+file.name+" ...");
-                            client.uploadFile(file.name, file, generate_key(), false).done(function(res){
-                                $('#linkbox').val(res);
-                                $('#success > i').addClass('icon-share icon-3x');
-                                $('#success').show();
-                                $('#error').hide();
-                                $('#droppy').show();
-                                $('#droppy_old').show();
-                                $('#block').hide();
-                                $('#action').text('');
-                            }).fail(function(){
-                                $('#block').hide();
-                                $('#error_desc').text('Error while uploading file.');
-                                $('#error > i').addClass('icon-exclamation icon-3x');
-                                $('#error').show();
-                                /* Upload failed, show an error. */
-                            });
-                        });
-                    }).fail(function(){
-                        /* Endpoint query failed, shows an error. */
+                    $('#action').text("Uploading "+file.name+" ...");
+                    client.uploadFile(file.name, file, generate_key(), false).done(function(res){
+                        $('#linkbox').val(res);
+                        $('#success > i').addClass('icon-share icon-3x');
+                        $('#success').show();
+                        $('#error').hide();
+                        $('#droppy').show();
+                        $('#droppy_old').show();
                         $('#block').hide();
-                        $('#error_desc').text('Unable to discover servers.');
+                        $('#action').text('');
+                    }).fail(function(){
+                        $('#block').hide();
+                        $('#error_desc').text('Error while uploading file.');
                         $('#error > i').addClass('icon-exclamation icon-3x');
                         $('#error').show();
+                        /* Upload failed, show an error. */
                     });
                 };
-            })(file);
+            })(file, client);
 
             /* Read uploaded file. */
             fr.readAsBinaryString(file);
         }
-        
+
         $(document).ready(function(){
             jQuery.event.props.push('dataTransfer');
 
-            /* Display download components */
-            $('#progressbar').find('div').css('width','0');
-            $('#block').hide();
-            $('#dlbtn').css('height', '40px').hide();
-            $('#success').hide();
-            $('#error').hide();
-
-            $('#share').share({
-                networks: ['facebook','pinterest','googleplus','twitter','email','digg'],
-                theme: 'square',
-                orientation: 'vertical',
-                affix: 'right center'
-            }).show();
-
-            $('#droppy_old_toggle').bind('click', function(){
-                $('#droppy').attr('disabled','true');
-                $('#droppy_old_toggle').hide();
-                $('#droppy_old_content').show();
-            });
-
-            $('#droppy').on({
-                dragenter: function(e) {
-                    $(this).css('background-color', '#ccc')
-                        .css('border-color','#bd0000')
-                        .css('color','#000');
-                },
-                dragleave: function(e) {
-                    $(this).css('background-color', '#ddd')
-                        .css('border-color','#888')
-                        .css('color','#333');
-                },
-                drop: function(e) {
-                    $(this).css('background-color', '#ddd')
-                        .css('border-color', '#888')
-                        .css('color', '#333');
-
-                    if(e.originalEvent.dataTransfer){
-                        if(e.originalEvent.dataTransfer.files.length) {
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            /* A file was dragged into the drop zone, take only
-                             * the first one !
-                             */
-
-                            var file = e.originalEvent.dataTransfer.files[0];
-                            uploadFile(file);
-                        }
-                    }}
-                }).hide();
-
-            /* Create our client */
-            var client = new Vodka();
-
-            /* Background servers propagation */
-            client.propagate();
-
-            /* Bind click event to register button */
-            $('#register').unbind('click').bind('click', function(){
-                var url = $('#server').val();
-                var patt = new RegExp('^(http|https)://.*$', 'i');
-                if (patt.test(url)) {
-                    (new events()).subscribe(
-                        new Object(),
-                        'vodka.register.ok',
-                        function(){
-                            $('#register_status > i').removeClass('icon-exclamation').addClass('icon-ok-sign icon-large');
-                            $('#register_status > span').text('Server registered !');
-                            $('#register_status').removeClass('ko').addClass('ok').show();
-                        });
-                    (new events()).subscribe(
-                        new Object(),
-                        'vodka.register.ko',
-                        function(){
-                            $('#register_status > i').removeClass('icon-ok-sign').addClass('icon-exclamation icon-large');
-                            $('#register_status > span').text('Unable to register server !');
-                            $('#register_status').removeClass('ok').addClass('ko').show();
-                        });
-                    client.register(url);
-                }
-            });
-
-            $('#droppy_file').on('change', function(evt) {
-                var file = evt.target.files[0];
-                uploadFile(file);
-            });
-
+            /* Load vodstok network */
+            client = new Vodka();
 
             /* Download mode ? */
             if (document.location.hash) {
-                /* Display download components */
                 $('#block').show();
                 $('#progressbar').hide();
                 $('#droppy').hide();
@@ -245,12 +150,123 @@
                     $('#error').show();
                 });
             } else {
-                /* Upload mode, displays the drop zone. */
-                $('#droppy').show();
-                $('#droppy_old').show();
-                $('#block').hide();
-                $('#progressbar').find('div').text('').css('width', '0px');
-                $('#droppy').text('Drop a file here to upload');
+
+                $('#page').hide();
+                $('#loading').show();
+                (new events()).subscribe(
+                    {},
+                    'vodka.network.check',
+                    function(nodes){
+                        $('#loading > #status').text('Checking nodes ... [0/'+nodes+']');
+                    }
+                );
+                (new events()).subscribe(
+                    {},
+                    'vodka.network.discover',
+                    function(nodes) {
+                        if (nodes) {
+                            $('#loading > #status').text('Discovering nodes ... ('+nodes+')');
+                        }
+                    }
+                );
+                (new events()).subscribe(
+                    {},
+                    'vodka.network.progress',
+                    function(done, total) {
+                        $('#loading > #status').text('Checking nodes ... ['+done+'/'+total+']');
+                        var width = (done*400)/total;
+                        $('#bar').width(width);
+                        if (done == total) {
+                            $('#loading').hide();
+                            $('#page').show();
+                            (new events()).publish('vodka.ui.main');
+                        }
+                    }
+                );
+                client.discover();
+
+                (new events()).subscribe({}, 'vodka.ui.main', function() {
+                    $('#droppy_old').show();
+                    $('#progressbar').find('div').text('').css('width', '0px');
+                    $('#droppy').text('Drop a file here to upload');
+                    $('#progressbar').find('div').css('width','0');
+                    $('#block').hide();
+                    $('#dlbtn').css('height', '40px').hide();
+                    $('#success').hide();
+                    $('#error').hide();
+                    $('#droppy').show()
+
+                    $('#share').share({
+                        networks: ['facebook','pinterest','googleplus','twitter','email','digg'],
+                        theme: 'square',
+                        orientation: 'vertical',
+                        affix: 'right center'
+                    }).show();
+
+                    $('#droppy_old_toggle').bind('click', function(){
+                        $('#droppy_old_toggle').hide();
+                        $('#droppy_old_content').show();
+                    });
+
+                    $('#droppy').on({
+                        dragenter: function(e) {
+                            $(this).css('background-color', '#ccc')
+                                .css('border-color','#bd0000')
+                                .css('color','#000');
+                        },
+                        dragleave: function(e) {
+                            $(this).css('background-color', '#ddd')
+                                .css('border-color','#888')
+                                .css('color','#333');
+                        },
+                        drop: function(e) {
+                            $(this).css('background-color', '#ddd')
+                                .css('border-color', '#888')
+                                .css('color', '#333');
+
+                            if(e.originalEvent.dataTransfer){
+                                if(e.originalEvent.dataTransfer.files.length) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    var file = e.originalEvent.dataTransfer.files[0];
+                                    uploadFile(file, client);
+                                }
+                            }
+                        }
+                    });
+
+                    /* Background servers propagation */
+                    client.propagate();
+                    /* Bind click event to register button */
+                    $('#register').unbind('click').bind('click', function(){
+                        var url = $('#server').val();
+                        var patt = new RegExp('^(http|https)://.*$', 'i');
+                        if (patt.test(url)) {
+                            (new events()).subscribe(
+                                new Object(),
+                                'vodka.register.ok',
+                                function(){
+                                    $('#register_status > i').removeClass('icon-exclamation').addClass('icon-ok-sign icon-large');
+                                    $('#register_status > span').text('Server registered !');
+                                    $('#register_status').removeClass('ko').addClass('ok').show();
+                                });
+                            (new events()).subscribe(
+                                new Object(),
+                                'vodka.register.ko',
+                                function(){
+                                    $('#register_status > i').removeClass('icon-ok-sign').addClass('icon-exclamation icon-large');
+                                    $('#register_status > span').text('Unable to register server !');
+                                    $('#register_status').removeClass('ok').addClass('ko').show();
+                                });
+                            client.register(url);
+                        }
+                    });
+                    $('#droppy_file').on('change', function(evt) {
+                        var file = evt.target.files[0];
+                        uploadFile(file);
+                    });
+                });
             }
         });
     </script>
