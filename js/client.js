@@ -47,7 +47,7 @@ VodClient.prototype.dlChunk = function(chunk_id) {
 VodClient.prototype.uploadChunk = function(content) {
     var dfd = $.Deferred();
     (new AjaxSpooler()).add({
-        url: this.urlbase,
+        url: this.urlbase+'?'+(new Date().getTime()),
         crossDomain: true,
         type: 'POST',
         data: {
