@@ -58,12 +58,18 @@ VodClient.prototype.uploadChunk = function(content) {
                 dfd.resolve(data);
             };
         })(dfd),
-        error: (function(dfd){
-            return function() {
-                dfd.reject();
+        error: (function(client, content, dfd){
+            return function(xhr, error) {
+	    	if (error == 'timeout') {
+			/* Timeout error, let's retry ! */
+			console.log('[timeout] retry.');
+			client.uploadChunk(content);
+		} else {
+                	dfd.reject();
+		}
             };
-        })(dfd),
-        timeout: 2000
+        })(this, content, dfd),
+        timeout: 5000
     });
 
     /* Returns a deferred. */
@@ -92,7 +98,7 @@ VodClient.prototype.endpoints = function() {
                 dfd.reject();
             };
         })(dfd),
-        timeout: 2000
+        timeout: 5000
     });
 
     /* Returns a deferred. */
@@ -121,7 +127,7 @@ VodClient.prototype.stats = function() {
                 dfd.reject();
             };
         })(dfd),
-        timeout: 2000
+        timeout: 5000
     });
 
     /* Returns a deferred. */
@@ -156,7 +162,7 @@ VodClient.prototype.register = function(url) {
                 dfd.reject();
             };
         })(dfd),
-        timeout: 2000
+        timeout: 5000
     });
 
     /* Returns a deferred. */
