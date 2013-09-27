@@ -60,7 +60,7 @@ VodClient.prototype.uploadChunk = function(content) {
         })(dfd),
         error: (function(client, content, dfd){
             return function(xhr, error) {
-	    	if (error == 'timeout') {
+	    	if ((error == 'timeout') || (error == 'abort')) {
 			/* Timeout error, let's retry ! */
 			console.log('[timeout] retry.');
 			client.uploadChunk(content);
