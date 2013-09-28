@@ -47,7 +47,7 @@ VodClient.prototype.dlChunk = function(chunk_id) {
 VodClient.prototype.uploadChunk = function(content, timeout) {
     /* Set timeout. */
     if (timeout == null) {
-        timeout = 10;
+        timeout = 10000;
     }
     var dfd = $.Deferred();
     (new AjaxSpooler()).add({
