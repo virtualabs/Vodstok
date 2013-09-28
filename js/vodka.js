@@ -378,7 +378,7 @@ Vodka.prototype.checkServers = function() {
     for (var i in this.endpoints) {
         var c = new VodClient(this.endpoints[i]);
         var dfd_ = $.Deferred();
-        c.uploadChunk(random_data).fail((function(inst, ep){
+        c.uploadChunk(random_data, 2000).fail((function(inst, ep){
             return function() {
                 inst.endpoints.splice(inst.endpoints.indexOf(ep),1);
             };

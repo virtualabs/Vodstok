@@ -44,7 +44,11 @@ VodClient.prototype.dlChunk = function(chunk_id) {
  * @param {string} content Chunk content
  * @return {string} Chunk ID
  */
-VodClient.prototype.uploadChunk = function(content) {
+VodClient.prototype.uploadChunk = function(content, timeout) {
+    /* Set timeout. */
+    if (timeout == null) {
+        timeout = 10;
+    }
     var dfd = $.Deferred();
     (new AjaxSpooler()).add({
         url: this.urlbase+'?'+(new Date().getTime()),
@@ -69,7 +73,7 @@ VodClient.prototype.uploadChunk = function(content) {
 		}
             };
         })(this, content, dfd),
-        timeout: 5000
+        timeout: timeout
     });
 
     /* Returns a deferred. */
