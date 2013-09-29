@@ -9,6 +9,46 @@ var VodClient = function(urlbase){
 };
 
 /**
+ * Upload a chunk
+ *
+ * @this {VodClient}
+ * @param {string} content Chunk content
+ * @return {string} Chunk ID
+ */
+VodClient.prototype.uploadChunk = function(chunk, timeout) {
+    /* Set timeout. */
+    if (timeout == null) {
+        timeout = 10000;
+    }
+    var dfd = $.Deferred();
+
+    /* Prepare chunk then spool it. */
+    (new AjaxSpooler()).add_({
+        url: this.urlbase+'?'+(new Date().getTime()),
+        crossDomain: true,
+        type: 'POST',
+        data: {
+            'chunk': chunk
+        },
+        success: (function(dfd){
+            return function(data){
+                dfd.resolve(data);
+            };
+        })(dfd),
+        error: (function(dfd){
+            return function(xhr, error) {
+                    dfd.reject();
+            };
+        })(dfd),
+        timeout: timeout
+    });
+
+    /* Returns a deferred. */
+    return dfd.promise();
+};
+
+
+/**
  * Download a chunk
  *
  * @this {VodClient}
@@ -31,49 +71,6 @@ VodClient.prototype.dlChunk = function(chunk_id) {
                 dfd.reject();
             };
         })(dfd)
-    });
-
-    /* Returns a deferred. */
-    return dfd.promise();
-};
-
-/**
- * Upload a chunk
- *
- * @this {VodClient}
- * @param {string} content Chunk content
- * @return {string} Chunk ID
- */
-VodClient.prototype.uploadChunk = function(content, timeout) {
-    /* Set timeout. */
-    if (timeout == null) {
-        timeout = 10000;
-    }
-    var dfd = $.Deferred();
-    (new AjaxSpooler()).add({
-        url: this.urlbase+'?'+(new Date().getTime()),
-        crossDomain: true,
-        type: 'POST',
-        data: {
-            'chunk': content
-        },
-        success: (function(dfd){
-            return function(data){
-                dfd.resolve(data);
-            };
-        })(dfd),
-        error: (function(client, content, dfd){
-            return function(xhr, error) {
-	    	if ((error == 'timeout') || (error == 'abort')) {
-			/* Timeout error, let's retry ! */
-			console.log('[timeout] retry.');
-			client.uploadChunk(content);
-		} else {
-                	dfd.reject();
-		}
-            };
-        })(this, content, dfd),
-        timeout: timeout
     });
 
     /* Returns a deferred. */
@@ -182,7 +179,7 @@ VodClient.prototype.test = function() {
     var dfd = $.Deferred();
 
     var test_chunk = randomChunk();
-    this.uploadChunk(test_chunk).done((function(inst, dfd, content){
+    this.uploadChunk(raw_chunk(test_chunk)).done((function(inst, dfd, content){
         return function(cid) {
             inst.dlChunk(cid).done((function(inst, dfd, check){
                 return function(content) {

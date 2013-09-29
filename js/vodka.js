@@ -1,4 +1,63 @@
 /**
+ * Chunk wrapper
+ */
+
+var Chunk = function(blob, index, key, content) {
+    if (content == null) {
+        this.blob = blob
+        this.index = index;
+        this.key = key;
+        this.prepared = false;
+        this.content = null;
+    } else {
+        this.prepared = true;
+        this.content = content;
+    }
+    this.chunk_size = (32*1024 - 16);
+};
+
+Chunk.prototype.prepare = function() {
+    var dfd = $.Deferred();
+
+    if (!this.prepared) {
+        /* Get content and encrypt it. */
+        var chunk_content = this.blob.slice(this.index*this.chunk_size, (this.index+1)*this.chunk_size, "application/octet-stream");
+
+        /* Send our chunk */
+        blob2str(chunk_content).done((function(chunk_obj, dfd){
+            return function(chunk) {
+                chunk_obj.setContent(
+                    encryptChunk(
+                        CryptoJS.lib.WordArray.fromArrayBuffer(chunk),
+                        chunk_obj.key
+                    ).toString()
+                );
+                dfd.resolve(chunk_obj.content);
+            };
+        })(this, dfd));
+    } else {
+        dfd.resolve(this.content);
+    }
+
+    return dfd.promise();
+};
+
+Chunk.prototype.setContent = function(content) {
+    this.content = content;
+    this.prepared = true;
+};
+
+Chunk.prototype.release = function() {
+    delete this.content;
+    delete this.key;
+    delete this.blob;
+};
+
+function raw_chunk(content) {
+    return new Chunk(null, null, null, content);
+};
+
+/**
  * Vodstok Simple downloader
  *
  * @param [url] url Optional URL.
@@ -38,7 +97,6 @@ var Vodka = function(url) {
  * @return {object} This endpoint's client
  */
 Vodka.prototype.getUrl = function() {
-    console.log(this.baseUrl);
     if (this.baseUrl == null) {
         var uri = new Uri(document.location.href);
     } else {
@@ -306,7 +364,6 @@ Vodka.prototype.queryEndpoints = function(url, depth) {
         ep_uri += uri.path();
     } else {
         var ep_uri = this.getUrl();
-        console.log(ep_uri);
     }
 
     if (this.endpoints.indexOf(ep_uri) < 0) {
@@ -378,7 +435,7 @@ Vodka.prototype.checkServers = function() {
     for (var i in this.endpoints) {
         var c = new VodClient(this.endpoints[i]);
         var dfd_ = $.Deferred();
-        c.uploadChunk(random_data, 2000).fail((function(inst, ep){
+        c.uploadChunk(raw_chunk(random_data), 2000).fail((function(inst, ep){
             return function() {
                 inst.endpoints.splice(inst.endpoints.indexOf(ep),1);
             };
@@ -441,8 +498,12 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
         nb_chunks++;
     }
     this.nchunks = nb_chunks + 1;
+    /*
     for (var i = 0; i < nb_chunks; i++) {
         chunks.push(blob.slice(i*chunk_size, (i+1)*chunk_size, "application/octet-stream"));
+    }*/
+    for (var i = 0; i < nb_chunks; i++) {
+        chunks.push(new Chunk(blob, i, key));
     }
 
     /* Upload chunks and collect eps and ids */
@@ -473,7 +534,7 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
             } else {
                 var c = filename+'|1.2.5|'+refs.join(',');
             }
-            console.log(c);
+
             if (c.length > chunk_size) {
                 inst.uploadFile('metadata', new Blob([c]), key, true).done((function(inst, dfd){
                     return function(fid) {
@@ -485,7 +546,7 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
                     };
                 })(dfd));
             } else {
-                inst.uploadChunk(new Blob([c]), key).done((function(inst, dfd){
+                inst.uploadChunk(new Chunk(new Blob([c]), 0, key)).done((function(inst, dfd){
                     return function(cid) {
                         inst.progress = this.nchunks;
                         inst.events.publish('progress', [inst.progress]);
@@ -514,7 +575,7 @@ Vodka.prototype.uploadFile = function(filename, blob, key, metafile) {
  * @param {string} key Encryption key
  * @return {Deferred} Deferred.
  */
-Vodka.prototype.uploadChunk = function(chunk, key) {
+Vodka.prototype.uploadChunk = function(chunk) {
     var dfd = $.Deferred();
 
     /* Check if we have some endpoints tested */
@@ -525,25 +586,21 @@ Vodka.prototype.uploadChunk = function(chunk, key) {
         var client = new VodClient(endpoint_url);
 
         /* Send our chunk */
-        blob2str(chunk).done((function(endpoint_url, dfd){
-            return function(chunk) {
-                var c = encryptChunk(CryptoJS.lib.WordArray.fromArrayBuffer(chunk), key).toString();
-                client.uploadChunk(c).done((function(ep, dfd){
-                    return function(id) {
-                        dfd.resolve([ep,id]);
-                    };
-                })(endpoint_url, dfd)).fail((function(dfd){
-                    return function() {
-                        dfd.reject();
-                    };
-                })(dfd));
+        client.uploadChunk(chunk).done((function(ep, dfd){
+            return function(id) {
+                dfd.resolve([ep,id]);
             };
-        })(endpoint_url, dfd));
+        })(endpoint_url, dfd)).fail((function(dfd){
+            return function() {
+                dfd.reject();
+            };
+        })(dfd));
     }
 
     /* Returns a deferred. */
     return dfd.promise();
 };
+
 
 /**
  * Register an url

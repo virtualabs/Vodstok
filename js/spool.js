@@ -22,6 +22,36 @@ var AjaxSpooler = function() {
  * @this {AjaxSpooler}
  * @param {object} request Ajax request (for $.ajax)
  */
+AjaxSpooler.prototype.add_ = function(request) {
+    /* Override success and error callbacks */
+    if (request.success) {
+        request.success = (function(inst, callback){
+            return function(data){
+                inst.done();
+                callback(data);
+            };
+        })(this, request.success);
+    }
+    if (request.error) {
+        request.error = (function(inst, callback){
+            return function(){
+                inst.done();
+                callback();
+            }
+        })(this, request.error);
+    }
+    
+    /* Enqueue request and run */
+    this.requests.push(request);
+    this.update();
+};
+
+/**
+ * Add a request to the spooler
+ *
+ * @this {AjaxSpooler}
+ * @param {object} request Ajax request (for $.ajax)
+ */
 AjaxSpooler.prototype.add = function(request) {
     /* Override success and error callbacks */
     if (request.success) {
@@ -69,7 +99,20 @@ AjaxSpooler.prototype.update = function() {
     if (this.current < this.max) {
         while ((this.current < this.max) && (this.requests.length > 0)) {
             this.current++;
-            $.ajax(this.requests.pop(0));
+            var request = this.requests.pop(0);
+            if (request.data && request.data['chunk'] && request.data['chunk'] instanceof Chunk) {
+                var chunk = request.data['chunk'];
+            
+                /* Prepare chunk */
+                chunk.prepare().done((function(request){
+                    return function(content) {
+                        request.data['chunk'] = content;
+                        $.ajax(request);
+                    };
+                })(request));
+            } else {
+                $.ajax(request);
+            }
         }
     }
 };
