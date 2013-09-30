@@ -32,6 +32,7 @@ VodClient.prototype.uploadChunk = function(chunk, timeout) {
         },
         success: (function(dfd){
             return function(data){
+                chunk.release();
                 dfd.resolve(data);
             };
         })(dfd),
