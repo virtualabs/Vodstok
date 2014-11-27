@@ -329,7 +329,8 @@ Vodka.prototype.dlChunk = function(chunks, key, last) {
                 var content = blobs.join('');
                 var infos = content.split('|');
                 var filename = infos[0];
-                var chunks = infos[1].split(',');
+                var version = infos[1];
+                var chunks = infos[2].split(',');
                 if (filename == 'metadata') {
                     return inst.dlChunk(chunks, key, false);
                 } else {
