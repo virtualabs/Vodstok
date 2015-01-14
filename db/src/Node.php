@@ -6,7 +6,7 @@
 class Node {
 
     /**
-     * @Id @Column(type="integer") @GeneratedValue
+     * @Id @Column(type="integer") @Generated
      * @var int
      **/
     protected $id;
@@ -16,6 +16,11 @@ class Node {
      * @var string
      **/
     protected $url;
+
+    /**
+     * @OneToMany(targetEntity="Vote", mappedBy="node")
+     **/
+    protected $votes = null;
 
     /**
      * Getters
