@@ -1,191 +1,279 @@
 <html>
-    <head>
-        <title>Vodstok - Share files freely</title>
-        <link type="text/css" href="//normalize-css.googlecode.com/svn/trunk/normalize.css" rel="stylesheet">
-        <link type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
-        <link rel="stylesheet" href="css/vodka.css">
-    </head>
-    <body>
-        <div class="scroll-up" style="display: block;">
-            <a href="#intro"><i class="fa fa-angle-up"></i></a>
+<head>
+<title>Vodstok - Share files freely</title>
+<link type="text/css" href="css/vodka.css" rel="stylesheet" />
+<link type="text/css" href="css/font-awesome.min.css" rel="stylesheet" />
+<link type="text/css" href="css/jquery.share.css" rel="stylesheet" />
+</head>
+<body>
+    <!-- Main interface -->
+    <div id="loading">
+        <div id="vodstok"></div>
+        <div id="progress">
+            <div id="bar"></div>
         </div>
-        <div id="main-nav" class="navbar navbar-fixed-top">
-            <div class="container">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#site-nav">
-                        <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
-                    </button>
-                    
-                    <!-- Logo -->
-                    <a class="navbar-brand scrollto" href="#home">Vodstok</a>
-
-                    <!-- Download bar -->
-                    <div class="pull-right">
-                        <div>
-                            <form id="contact-form" class="scrollimation fade-left" action="contact.php" method="post" novalidate="">
-                                <div class="form-group">
-                                  <label class="control-label" for="search">Search</label>
-                                  <div class="controls">
-                                    <input id="search" name="search" placeholder="Paste vodkstok link here" class="form-control" type="text">
-                                    <i class="fa fa-globe"></i>
-                                  </div>
-                                </div>
-                            </form>
-                        </div>
+        <div id="status">Discovering nodes ...</div>
+    </div>
+    <div id="page">
+    <a href="https://github.com/virtualabs/Vodstok"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_red_aa0000.png" alt="Fork me on GitHub"></a>
+        <div id="logo"></div>
+        <div id="block">
+            <div><i id="action-icon"></i><span id="action"></span></div>
+            <div id="progress">
+                <div id="progressbar">
+                    <div id="bar">
+                        <div id="overlay"></div>
                     </div>
+                </div>
+                <div id="download">
+                    <div id="dlbtn"></div>
                 </div>
             </div>
         </div>
-        <section id="intro" class="section" style="position: relative; z-index: 0; background: none;">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="hello wow bounceInDown animated" style="visibility: visible; -webkit-animation: bounceInDown;">
-                            <h2>Free, Distributed, Storage</h2>
-                            <a href="features.html" class="button-outline">Discover it !</a>
-                        </div>
-
-                        <a href="#about">
-                            <div class="mouse-icon">
-                                <div class="wheel"></div>
-                            </div>
-                        </a>
-                    </div>
-                </div><!-- .row -->
-            </div><!-- .container -->
-        </section>
-        <section id="share">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div>
-                            <div class="a">Drag files here</div>
-                            <div class="b">Or, if you prefer...</div>
-                            <div>
-                                <a href="#" class="button blue">Select files from your computer</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div id="error">
+            <i id="icon"></i><span id="error_desc"></span>
+        </div>
+        <div id="success">
+            <i id="icon"></i><span id="success_desc">Share this link: </span><br/><input type="text" id="linkbox"></input>
+        </div>
+        <div id="droppy" ondragover="return false">
+        </div>
+        <div id="droppy_old">
+            <div id="droppy_old_toggle"><i class="icon-upload"></i>&nbsp;or do it the old way =)</div>
+            <div id="droppy_old_content">
+                Select file to upload: <input type="file" id="droppy_file"/><br/>
             </div>
-        </section>
-        <section id="stats">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-4">
-                        <div class="widget yellw-bg no-padding">
-                            <div class="p-m">
-                                <h1 class="m-xs">$ 50,992</h1>
-
-                                <h3 class="font-bold no-margins">
-                                    Half-year revenue margin
-                                </h3>
-                                <small>Sales marketing.</small>
-                            </div>
-                            <div class="flot-chart">
-                                <div class="flot-chart-content" id="flot-chart1" style="padding: 0px; position: relative;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="widget yellw-bg no-padding">
-                            <div class="p-m">
-                                <h1 class="m-xs">$ 50,992</h1>
-
-                                <h3 class="font-bold no-margins">
-                                    Half-year revenue margin
-                                </h3>
-                                <small>Sales marketing.</small>
-                            </div>
-                            <div class="flot-chart">
-                                <div class="flot-chart-content" id="flot-chart2" style="padding: 0px; position: relative;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="widget yellw-bg no-padding">
-                            <div class="p-m">
-                                <h1 class="m-xs">$ 50,992</h1>
-
-                                <h3 class="font-bold no-margins">
-                                    Half-year revenue margin
-                                </h3>
-                                <small>Sales marketing.</small>
-                            </div>
-                            <div class="flot-chart">
-                                <div class="flot-chart-content" id="flot-chart3" style="padding: 0px; position: relative;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        </div>
+        <div id="about">
+            <h2>What is Vodstok ?</h2>
+            <p>Vodstok was primarily developped as a <i>voluntary distributed storage kit</i> that anybody may use to be part of a acentered storage network. More than that, it is now an easy-to-use platform to share information (your files, pictures, documents, whatever you want) freely and securely.</p>
+            <p>You can see Vodstok as a great hard drive splitted over multiple servers all over the Internet. Since Vodstok is an OpenSource web application, anybody can install it on a server and share a part of its allocated space with other Vodstok users ! Vodstok is easy to install, because it does not need any heavy database and only relies on PHP version >5.2.</p>
+            <h2>How to contribute to the Vodstok network ?</h2>
+            <p>This is pretty easy. If you own a server and want to share a part of your storage, download Vodstok from our github, unzip files to your servers, and follow the instructions. You'll have to chose an amount of space to allocate to your Vodstok server, ensure some files and directories permissions and that's it ! A simple web hosting is enough to be part of Vodstok Network.</p>
+            <p>Once installed, feel free to register your server on this Vodstok server by filling the following form and clicking on the 'Register' button. Your server URL will be propagated automatically to the other Vodstok servers when users will use it. If you want to register another Vodstok server you do not own but know, feel free :).</p>
+            <div id="registration">
+                <div id="register_status"><i id="icon"></i><span></span></div>
+                <label for="server">Register your server: </label>
+                <input type="text" id="server" value="Your server URL here"/>
+                <button id="register">Register !</button>
             </div>
-        </section>
-        <section id="pres-about">
-            <div id="pres-about-share">
-            </div>
-            <div id="pres-about-peertopeer">
-            </div>
-            <div id="pres-about-anonymously">
-            </div>
-        </section>
-        <section id="pres-howto">
-            <div id="pres-howto-securely">
-            </div>
-        </section>
-        <section id="pres-contrib">
-        </section>
+            <p>If you find a bug, a defect or improve the current Vodstok HTML5 client or server, please fork the project on github and ask for a pull request, we will be glad to merge it inside the main code (if this has to be merged).</p>
+            <h2>License</h2>
+            <p>Vodstok is Open Source software, based on other Open Source projects:</p>
+            <ul>
+                <li>Crypto-JS</li>
+                <li>jQuery</li>
+                <li>Filsaver.js</li>
+            </ul>
+            <p>Vodstok heavily relies on brand new HTML 5 features, such as File API and Drag and Drop support. If you have some trouble to see correctly this page or to use the client, see next section.</p>
+            <h2>Support</h2>
+            <p><b>Insults, thanks and other stuff:</b> virtualabs -at- gmail -dot- com</p>
+        </div>
+    </div>
+    <div id="share"></div>
 
-        <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
-        <script src="js/jquery.backstretch.min.js"></script>
-        <script src="js/jquery.flot.js"></script>
-        <script src="js/jquery.flot.tooltip.min.js"></script>
-        <script src="js/jquery.flot.resize.js"></script>
-        <script type="text/javascript">
-            $(document).ready(function() {
-                $('#intro').backstretch('http://p1.pichost.me/i/69/1937790.jpg');
+    <!-- JS scripts -->
+    <script src="js/jquery.min.js" type="text/javascript" language="javascript"></script>
+    <script src="js/jquery.share.js" type="text/javascript" language="javascript"></script>
+    <script src="js/filesaver.js" language="javascript"></script>
+    <script src="js/query.js" language="javascript"></script>
+    <script src="js/utils.js" language="javascript"></script>
+    <script src="js/events.js" language="javascript"></script>
+    <script src="js/uri.js" language="javascript"></script>
+    <script src="js/spool.js" language="javascript"></script>
+    <script src="js/client.js" language="javascript"></script>
+    <script src="js/crypto/aes.js" language="javascript"></script>
+    <script src="js/crypto/lib-typedarrays.js" language="javascript"></script>
+    <script src="js/crypto/x64-core.js" language="javascript"></script>
+    <script src="js/crypto/sha512.js" language="javascript"></script>
+    <script src="js/crypto/format-hex.js" language="javascript"></script>
+    <script src="js/vodka.js" language="javascript"></script>
+    <script>
+        function uploadFile(file) {
+            var fr = new FileReader();
+            fr.onload = (function(file, client){
+                return function(e){
+                    /* Show progressbar in indeterminate mode. */
+                    $('#bar').css('width','100%').text('');
+                    var overlay = $('<div/>').addClass('roll')
+                        .attr('id', 'overlay');
+                    $('#bar').append(overlay);
+                    $('#overlay').addClass('roll');
 
-                var d1 = [[1262304000000, 6], [1264982400000, 3057], [1267401600000, 20434], [1270080000000, 31982], [1272672000000, 26602], [1275350400000, 27826], [1277942400000, 24302], [1280620800000, 24237], [1283299200000, 21004], [1285891200000, 12144], [1288569600000, 10577], [1291161600000, 10295]];
-                var d2 = [[1262304000000, 5], [1264982400000, 200], [1267401600000, 1605], [1270080000000, 6129], [1272672000000, 11643], [1275350400000, 19055], [1277942400000, 30062], [1280620800000, 39197], [1283299200000, 37000], [1285891200000, 27000], [1288569600000, 21000], [1291161600000, 17000]];
+                    /* Add some text explaining the situation ... */
+                    $('#block').show();
+                    $('#droppy').hide();
+                    $('#success').hide();
+                    $('#droppy_old').hide();
+                    $('#error').hide();
 
-                var data3 = [
-                    { label: "Data 1", data: d1, color: '#39c7aa'},
-                    { label: "Data 2", data: d2, color: '#96d3c6' }
-                ];
-                var config = {
-                    xaxis: {
-                        tickDecimals: 0
-                    },
-                    series: {
-                        lines: {
-                            show: true,
-                            fill: true,
-                            fillColor: {
-                                colors: [{
-                                    opacity: 1
-                                }, {
-                                    opacity: 1
-                                }]
-                            },
-                        },
-                        points: {
-                            width: 0.1,
-                            show: false
-                        },
-                    },
-                    grid: {
-                        show: false,
-                        borderWidth: 0
-                    },
-                    legend: {
-                        show: false,
-                    }
+                    $('#action').text("Uploading "+file.name+" ...");
+                    client.uploadFile(file.name, file, generate_key(), false).done(function(res){
+                        $('#linkbox').val(res);
+                        $('#success > i').addClass('icon-share icon-3x');
+                        $('#success').show();
+                        $('#error').hide();
+                        $('#droppy').show();
+                        $('#droppy_old').show();
+                        $('#block').hide();
+                        $('#action').text('');
+                    }).fail(function(){
+                        $('#block').hide();
+                        $('#error_desc').text('Error while uploading file.');
+                        $('#error > i').addClass('icon-exclamation icon-3x');
+                        $('#error').show();
+                        /* Upload failed, show an error. */
+                    });
                 };
-                $.plot($("#flot-chart1"), data3, config);
-                $.plot($("#flot-chart2"), data3, config);
-                $.plot($("#flot-chart3"), data3, config);
-            });
-        </script>
-    </body>
+            })(file, client);
+
+            /* Read uploaded file. */
+            fr.readAsBinaryString(file);
+        }
+
+        $(document).ready(function(){
+            jQuery.event.props.push('dataTransfer');
+
+            /* Load vodstok network */
+            client = new Vodka();
+
+            /* Download mode ? */
+            if (document.location.hash) {
+                $('#logo').bind('click', function() {
+                    document.location = client.getUrl();
+                }).css('cursor','pointer');
+                $('#loading').hide();
+                $('#page').show();
+                $('#block').show();
+                $('#progressbar').hide();
+                $('#droppy').hide();
+                $('#droppy_old').hide();
+                client.download(document.location.href).fail(function(){
+                    $('#block').hide();
+                    $('#error_desc').text('Invalid download link.');
+                    $('#error > i').addClass('icon-exclamation icon-3x');
+                    $('#error').show();
+                });
+            } else {
+
+                $('#page').hide();
+                $('#loading').show();
+                (new events()).subscribe(
+                    {},
+                    'vodka.network.check',
+                    function(nodes){
+                        $('#loading > #status').text('Checking nodes ... [0/'+nodes+']');
+                    }
+                );
+                (new events()).subscribe(
+                    {},
+                    'vodka.network.discover',
+                    function(nodes) {
+                        if (nodes) {
+                            $('#loading > #status').text('Discovering nodes ... ('+nodes+')');
+                        }
+                    }
+                );
+                (new events()).subscribe(
+                    {},
+                    'vodka.network.progress',
+                    function(done, total) {
+                        $('#loading > #status').text('Checking nodes ... ['+done+'/'+total+']');
+                        var width = (done*400)/total;
+                        $('#bar').width(width);
+                        if (done == total) {
+                            $('#loading').hide();
+                            $('#page').show();
+                            (new events()).publish('vodka.ui.main');
+                        }
+                    }
+                );
+                client.discover();
+
+                (new events()).subscribe({}, 'vodka.ui.main', function() {
+                    $('#droppy_old').show();
+                    $('#progressbar').find('div').text('').css('width', '0px');
+                    $('#droppy').text('Drop a file here to upload');
+                    $('#progressbar').find('div').css('width','0');
+                    $('#block').hide();
+                    $('#dlbtn').css('height', '40px').hide();
+                    $('#success').hide();
+                    $('#error').hide();
+                    $('#droppy').show()
+
+                    $('#share').share({
+                        networks: ['facebook','pinterest','googleplus','twitter','email','digg'],
+                        theme: 'square',
+                        orientation: 'vertical',
+                        affix: 'right center'
+                    }).show();
+
+                    $('#droppy_old_toggle').bind('click', function(){
+                        $('#droppy_old_toggle').hide();
+                        $('#droppy_old_content').show();
+                    });
+
+                    $('#droppy').on({
+                        dragenter: function(e) {
+                            $(this).css('background-color', '#ccc')
+                                .css('border-color','#bd0000')
+                                .css('color','#000');
+                        },
+                        dragleave: function(e) {
+                            $(this).css('background-color', '#ddd')
+                                .css('border-color','#888')
+                                .css('color','#333');
+                        },
+                        drop: function(e) {
+                            $(this).css('background-color', '#ddd')
+                                .css('border-color', '#888')
+                                .css('color', '#333');
+
+                            if(e.originalEvent.dataTransfer){
+                                if(e.originalEvent.dataTransfer.files.length) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+
+                                    var file = e.originalEvent.dataTransfer.files[0];
+                                    uploadFile(file, client);
+                                }
+                            }
+                        }
+                    });
+
+                    /* Background servers propagation */
+                    client.propagate();
+                    /* Bind click event to register button */
+                    $('#register').unbind('click').bind('click', function(){
+                        var url = $('#server').val();
+                        var patt = new RegExp('^(http|https)://.*$', 'i');
+                        if (patt.test(url)) {
+                            (new events()).subscribe(
+                                new Object(),
+                                'vodka.register.ok',
+                                function(){
+                                    $('#register_status > i').removeClass('icon-exclamation').addClass('icon-ok-sign icon-large');
+                                    $('#register_status > span').text('Server registered !');
+                                    $('#register_status').removeClass('ko').addClass('ok').show();
+                                });
+                            (new events()).subscribe(
+                                new Object(),
+                                'vodka.register.ko',
+                                function(){
+                                    $('#register_status > i').removeClass('icon-ok-sign').addClass('icon-exclamation icon-large');
+                                    $('#register_status > span').text('Unable to register server !');
+                                    $('#register_status').removeClass('ok').addClass('ko').show();
+                                });
+                            client.register(url);
+                        }
+                    });
+                    $('#droppy_file').on('change', function(evt) {
+                        var file = evt.target.files[0];
+                        uploadFile(file);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
 </html>
