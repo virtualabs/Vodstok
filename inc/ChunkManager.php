@@ -68,8 +68,8 @@ class ChunkManager {
      * $return int Oldest chunk id.
      **/
 
-    protected function removeOldestChunk() {
-        $oldest_chunk = $this->getOldestChunk();
+    protected function removeOldest() {
+        $oldest_chunk = $this->getOldest();
 
         if ($oldest_chunk) {
 
@@ -96,7 +96,7 @@ class ChunkManager {
     public function makeRoom($space) {
         if ($space <= 32768) {
             while ($this->getFreeSpace() < $space) {
-                $this->removeOldestChunk();
+                $this->removeOldest();
             }
         }
     }
@@ -110,7 +110,7 @@ class ChunkManager {
      * @return Chunk Oldest chunk if found, NULL otherwise.
      **/
 
-    private function getOldestChunk() {
+    private function getOldest() {
         $qb = $this->em->createQueryBuilder();
         $query = $qb->select('c')
                     ->from('Chunk','c')
@@ -125,7 +125,7 @@ class ChunkManager {
     }
 
     /**
-     * getChunk
+     * get
      *
      * Returns the content of a chunk.
      *
@@ -133,7 +133,7 @@ class ChunkManager {
      * @return string Chunk content (base64 encoded)
      **/
 
-    public function getChunk($name) {
+    public function get($name) {
         $chunk = $this->em->getRepository('Chunk')->findOneBy(array(
             "name" => $name
         ));
@@ -162,7 +162,7 @@ class ChunkManager {
      * @param $data string Base64-encoded data to store in our chunk.
      **/
 
-    public function createChunk($data) {
+    public function create($data) {
         /* Ensure size. */
         $data = @base64_decode($data);
         if (strlen($data) > 32768)
@@ -210,7 +210,7 @@ class ChunkManager {
 
     public function getMinChunkLifetime() {
         $now = new DateTime('now');
-        $oldest_chunk = $this->getOldestChunk();
+        $oldest_chunk = $this->getOldest();
 
         if ($oldest_chunk) {
             return ($now->getTimestamp() - $oldest_chunk->getCreationDate()->getTimestamp());
@@ -252,6 +252,37 @@ class ChunkManager {
         }
 
         return $upload_rates;
+    }
+
+
+    /**
+     * stats
+     *
+     * Displays the computed following stats:
+     * - minimum chunk age
+     * - last hour upload rate
+     * - reputation
+     **/
+
+    public function stats() {
+        /* Retrieve minimum chunk age. */
+        $minAge = $this->getMinChunkLifetime();
+
+        /* Compute last hour upload rate in bytes. */
+        $query = $this->em->createQueryBuilder()
+            ->select('SUM(c.filesize)')
+            ->from('Chunk', 'c')
+            ->where('c.created > :last')
+            ->setParameter('last', new DateTime('-1 hour'), \Doctrine\DBAL\Types\Type::DATETIME)
+            ->getQuery();
+        $lastHourRate = $query->getSingleScalarResult();
+
+        /* Displays the result. */
+        if ($minAge == 0)
+            $minAge = '0';
+        if ($lastHourRate == 0)
+            $lastHourRate = '0';
+        die($minAge.','.$lastHourRate);
     }
 }
 
