@@ -1,44 +1,33 @@
 <?php
 
+/* Allow access from other domains: this is a web API ! */
+header("Access-Control-Allow-Origin: *");
+
 /**
  * Includes
  */
 
-require_once('utils.php');
+require_once('inc/ChunkManager.php');
+require_once('inc/NodeManager.php');
 
-/**
- * Main dispatcher
- */
+$chunkManager = new ChunkManager($entityManager);
+$nodeManager = new NodeManager($entityManager);
 
-/* Is Vodstok installed ? */
-if (!defined('INSTALLED'))
-{
-    /* Nope, let's install ! */
-    header('Location: install.php');
-    die('please install');
+/* Chunk creation/retrieval. */
+if (isset($_GET['chunk'])) {
+    die($chunkManager->get($_GET['chunk']));
+} else if (isset($_POST['chunk'])) {
+    $chunkManager->create($_POST['chunk']);
+} else if (isset($_GET['stats'])) {
+    $chunkManager->stats();
+} else if (isset($_GET['endpoints'])) {
+    $nodeManager->random();
+} else if (isset($_GET['register'])) {
+    $nodeManager->register($_GET['register']);
+} else if (isset($_GET['version'])) {
+    die(Settings::getVersion());
+} else {
+    readfile('vodka.html');
 }
 
-/* Version request */
-else if (isset($_GET['version']))
-    die(VERSION);
-/* Statistics request */
-else if (isset($_GET['stats']))
-	dispStats();
-/* Chunk retrieval request */
-else if (isset($_GET['chunk']))
-	dlChunk($_GET['chunk']);
-/* Chunk upload request */
-else if (isset($_POST['chunk']))
-	createChunk($_POST['chunk']);
-/* Servers (endpoints) dictionnary request */
-else if (isset($_GET['endpoints']))
-    listRandomServers();
-/* Server announcement request */
-else if (isset($_GET['register']))
-    registerServer($_SERVER['REMOTE_ADDR'],$_GET['register']);
-else
-{
-/* Main index page */
-readfile('vodka.html');
-}
 
