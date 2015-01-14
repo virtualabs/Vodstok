@@ -1,7 +1,7 @@
 <?php
 
 require_once "db/bootstrap.php";
-require_once "inc/settings.php";
+require_once "inc/Settings.php";
 
 /**
  * NodeManager
