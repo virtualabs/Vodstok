@@ -27,7 +27,7 @@ if (isset($_GET['chunk'])) {
 } else if (isset($_GET['version'])) {
     die(Settings::getVersion());
 } else {
-    readfile('vodka.html');
+    readfile('vodka.old.html');
 }
 
 
