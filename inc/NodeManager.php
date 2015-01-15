@@ -143,6 +143,7 @@ class NodeManager {
             $node = new Node();
             $node->setUrl($urlNode);
             $this->em->persist($node);
+            $this->em->flush();
         }
 
         /* Vote for this node. This will also commit db changes. */
@@ -174,13 +175,10 @@ class NodeManager {
         ));
 
         if ($vote) {
-            //$vote = $vote[0];
-            print("vote exists");
             /* If already voted, update. */
             $vote->update();
             $this->em->persist($vote);
         } else {
-            print("add vote");
             /* If first vote, create. */
             $vote = new Vote();
             $vote->setIp($ip);
