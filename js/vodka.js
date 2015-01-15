@@ -123,6 +123,7 @@ Vodka.prototype.discover = function() {
     this.events.publish('vodka.network.discover');
     this.queryEndpoints().done((function(inst){
         return function(endpoints) {
+            console.log('endpoints:' + endpoints);
             inst.events.publish('vodka.network.check', [endpoints.length]);
             /* Once the endpoints retrieved, check them */
             inst.checkServers().done((function(inst){
@@ -205,6 +206,7 @@ Vodka.prototype.dlFile = function(chunk, key) {
     this.dlChunk([chunk], key, true).done((function(inst, dfd, key){
         return function(blob){
             try {
+                console.log(blob);
                 var infos= blob.split('|');
                 var filename = infos[0];
                 var version = infos[1];
@@ -214,6 +216,7 @@ Vodka.prototype.dlFile = function(chunk, key) {
                     dfd.reject();
                 } else {
                     if (filename != 'metadata') {
+                        console.log('no metdata, display btn');
                         inst.nchunks = chunks.length;
                         inst.progress = 0;
                         inst.mode = inst.MODE_DL;
@@ -237,26 +240,40 @@ Vodka.prototype.dlFile = function(chunk, key) {
                             })(inst, filename, dfd))
                             .show();
                     } else {
+                        console.log("Found metadata: " + chunks);
                         /* Retrieve the complete metadata and launch the download of all chunks. */
-                        dfd.resolve(inst.dlChunk(chunks, key, false)).done((function(inst, dfd, key){
+                        inst.dlChunk(chunks, key, true).done((function(inst, dfd, key){
                             return function(content){
                                 var infos= content.split('|');
                                 var filename = infos[0];
                                 var version = infos[1];
                                 var chunks = infos[2].split(',');
+                                console.log(chunks);
 
                                 inst.nchunks = chunks.length;
                                 inst.progress = 0;
-                                inst.download_started = true;
+                                inst.mode = inst.MODE_DL;
 
-                                /* Launching the dl of all chunks */
-                                inst.dlChunk(chunks, key, trye).done((function(filename, dfd){
-                                    return function(content){
-                                        dfd.resolve([filename, content]);
-                                    };
-                                })(filename, dfd));
+
+                                $('#dlbtn').html('Download &laquo;' + filename + '&raquo;')
+                                    .unbind('click')
+                                    .bind('click', (function(inst, filename, dfd){
+                                        return function(){
+                                            $('#dlbtn').hide();
+                                            $('#progressbar').show();
+
+                                            /* Launch the download of all chunks. */
+                                            console.log(inst);
+                                            inst.dlChunk(chunks, key, true).done((function(filename, dfd){
+                                                return function(content){
+                                                    dfd.resolve([filename, content]);
+                                                };
+                                            })(filename, dfd));
+                                        };
+                                    })(inst, filename, dfd))
+                                    .show();
                             };
-                        })(this, dfd, key));
+                        })(inst, dfd, key));
                     }
                 }
             } catch (err) {
@@ -298,24 +315,32 @@ Vodka.prototype.dlChunk = function(chunks, key, last) {
     /* Loop on every chunk and download it */
     var chunk_array = makeChunkArray(chunks);
     for (var i in chunk_array) {
-        var client = new VodClient(chunk_array[i].object.split('?')[0]);
+        var nodeUrl = chunk_array[i].object.split('?')[0];
         var cid = chunk_array[i].object.split('?')[1];
+        var client = new VodClient(nodeUrl);
         var dfd_ = $.Deferred();
-        client.dlChunk(cid).done((function(inst, dfd, blobs, id, key){
+        client.dlChunk(cid)
+        .done((function(inst, dfd, blobs, id, key, node){
             return function(content){
                 content = decryptChunk(content, key);
                 blobs[id] = content;
                 if (inst.mode == inst.MODE_DL) {
+                    /* Notify progress. */
                     inst.progress++;
                     inst.events.publish('progress', [inst.progress]);
+
+                    /* Notify working node. */
+                    inst.events.publish('node.dl.ok', node);
                 }
                 dfd.resolve();
             };
-        })(this, dfd_, blobs, chunk_array[i].id, key)).fail((function(dfd){
+        })(this, dfd_, blobs, chunk_array[i].id, key, nodeUrl))
+        .fail((function(inst, dfd, nodeUrl){
             return function(){
                 dfd.reject();
+                inst.events.publish('node.dl.ko', node);
             };
-        })(dfd_));
+        })(this, dfd_, nodeUrl));
         deferreds.push(dfd_.promise());
     }
     /* Once done, put all in one and return it */
@@ -332,8 +357,11 @@ Vodka.prototype.dlChunk = function(chunks, key, last) {
                 var version = infos[1];
                 var chunks = infos[2].split(',');
                 if (filename == 'metadata') {
+                    console.log('dlChunk::metadata');
                     return inst.dlChunk(chunks, key, false);
                 } else {
+                    console.log('dlChunk::not metadata');
+                    console.log(chunks);
                     return inst.dlChunk(chunks, key, true);
                 }
             }
