@@ -17,11 +17,11 @@ $nodeManager = new NodeManager($entityManager);
 if (isset($_GET['chunk'])) {
     die($chunkManager->get($_GET['chunk']));
 } else if (isset($_POST['chunk'])) {
-    $chunkManager->create($_POST['chunk']);
+    die($chunkManager->create($_POST['chunk']));
 } else if (isset($_GET['stats'])) {
     $chunkManager->stats();
 } else if (isset($_GET['endpoints'])) {
-    $nodeManager->random();
+    die($nodeManager->random());
 } else if (isset($_GET['register'])) {
     $nodeManager->register($_GET['register']);
 } else if (isset($_GET['version'])) {

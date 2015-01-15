@@ -41,6 +41,16 @@ class NodeManager {
         return ($nb_slots < Settings::getMaxNodeSlots());
     }
 
+    /**
+     * random
+     *
+     * Return a random list of nodes, based on their reputation.
+     *
+     **/
+
+    public function random() {
+        return 'http://share.local/';
+    }
 
     /**
      * find

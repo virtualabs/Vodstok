@@ -170,7 +170,7 @@ class ChunkManager {
 
         /* Check if chunk exists. */
         $chunk_name = md5($data.$_SERVER['REMOTE_ADDR'].time().rand());
-        $chunks = $this->em->findBy(array(
+        $chunks = $this->em->getRepository('Chunk')->findBy(array(
             "name" => $chunk_name
         ));
         if (count($chunks) == 0) {
@@ -181,7 +181,7 @@ class ChunkManager {
             $chunk = new Chunk($chunk_name, strlen($data));
 
             /* Write chunk content on disk. */
-            $f = fopen(Settings::getChunksDirectory().'/'.$chunk->getName());
+            $f = fopen(Settings::getChunksDirectory().'/'.$chunk->getName(), 'wb');
             if ($f) {
                 fwrite($f, $data);
                 fclose($f);
@@ -189,6 +189,8 @@ class ChunkManager {
                 /* If write is successful, update db. */
                 $this->em->persist($chunk);
                 $this->em->flush();
+
+                return $chunk->getName();
             } else {
                 $this->error('ERR_IO_ERROR');
             }
