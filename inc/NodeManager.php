@@ -30,9 +30,8 @@ class NodeManager {
      * @return bool true if an empty slot is found, false otherwise.
      **/
 
-    public function hasEmpltySlot() {
-        $nb_slots = $this->em->getRepository('Node')
-                    ->createQueryBuilder()
+    public function hasEmptySlot() {
+        $nb_slots = $this->em->createQueryBuilder()
                     ->select('COUNT(n.id)')
                     ->from('Node','n')
                     ->getQuery()
@@ -44,18 +43,29 @@ class NodeManager {
     /**
      * random
      *
+     * TODO
+     *
      * Return a random list of nodes, based on their reputation.
      *
      **/
 
     public function random() {
+        $nodes = $this->em->getRepository('Node')->findAll();
+
+        /* Populate an array based on votes. */ 
+        $nodes_array = array();
+        foreach ($nodes as $node) {
+            for ($i=0; $i<$node->countVotes(); $i++)
+                $nodes_array[] = $node->getUrl();
+        }
+
+        /* Randomly chose X of them. */
+        // TODO
         return 'http://share.local/';
     }
 
     /**
      * find
-     *
-     * TODO
      *
      * Find node given its URL, if existing
      *
@@ -64,9 +74,41 @@ class NodeManager {
      **/
 
     public function find($urlNode) {
-        /* 1. Explode the URL and keeps interesting parts. */
-        /* 2. Compare fqdn against shorter forms (i.e. virtualabs.fr instead of www.virtualabs.fr)
-         *    and try to find an existing node based on this. */
+        $fragments = parse_url($urlNode);
+        $scheme = $fragments['scheme'];
+        $host = $fragments['host'];
+        if (array_key_exists('port', $fragments))
+           $port = $fragments['port'];
+        else
+            $port = null;
+        $uri = $fragments['path'];
+
+        /* First search by http scheme. */
+        $url = 'http://'.$host;
+        if ($port)
+            $url .= $port;
+        $url .= $uri;
+
+        $node = $this->em->getRepository('Node')
+            ->findOneBy(array(
+                'url' => $url
+            ));
+
+        if ($node) {
+            return $node;
+        } else {
+            $url = 'https://'.$host;
+            if ($port)
+                $url .= $port;
+            $url .= $uri;
+
+            $node = $this->em->getRepository('Node')
+                ->findOneBy(array(
+                    'url' => $url
+                ));
+
+            return $node;
+        }   
     }
 
     /**
@@ -74,7 +116,7 @@ class NodeManager {
      *
      * TODO
      *
-     * Remove the oldest node
+     * Remove the node with the oldest votes.
      **/
 
     public function removeOldest() {
@@ -89,20 +131,22 @@ class NodeManager {
      * @return bool True on success, false otherwise.
      **/
 
-    public function register($urlNode) {
+    public function register($ip, $urlNode) {
         /* If this node does not exist, register it. */
         $node = $this->find($urlNode);
         if (!$node) {
             /* If no more slots available, free the oldest one. */
-            if (!$this->hasEmptySlot)
+            if (!$this->hasEmptySlot())
                 $this->removeOldest();
 
             /* Register node. */
             $node = new Node();
             $node->setUrl($urlNode);
             $this->em->persist($node);
-            $this->em->flush();
         }
+
+        /* Vote for this node. This will also commit db changes. */
+        $this->vote($ip, $urlNode);
 
         /* Returns node. */
         return $node;
@@ -119,28 +163,30 @@ class NodeManager {
      **/
 
     public function vote($ip, $urlNode) {
-        /* Get node. */
-        $node = $this->register($urlNode);
+
+        $node = $this->find($urlNode);
 
         /* Find previous vote if any. */
-        $vote = $this->em->getRepository('Vote')->createQueryBuilder()
-            ->select('v')
-            ->from('Vote','v')
-            ->where('v.ip == :ip AND v.node == :node')
-            ->setParameter('ip', $ip)
-            ->setParameter('node', $node)
-            ->getQuery()
-            ->getResult();
+        $vote = $this->em->getRepository('Vote')
+            ->findOneBy(array(
+                'ip' => $ip,
+                'node' => $node
+        ));
 
         if ($vote) {
+            //$vote = $vote[0];
+            print("vote exists");
             /* If already voted, update. */
             $vote->update();
             $this->em->persist($vote);
         } else {
+            print("add vote");
             /* If first vote, create. */
             $vote = new Vote();
             $vote->setIp($ip);
             $vote->setNode($node);
+            $vote->update();
+            $this->em->persist($vote);
         }
 
         /* Flush database. */

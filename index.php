@@ -23,7 +23,7 @@ if (isset($_GET['chunk'])) {
 } else if (isset($_GET['endpoints'])) {
     die($nodeManager->random());
 } else if (isset($_GET['register'])) {
-    $nodeManager->register($_GET['register']);
+    $nodeManager->register($_SERVER['REMOTE_ADDR'], $_GET['register']);
 } else if (isset($_GET['version'])) {
     die(Settings::getVersion());
 } else {
