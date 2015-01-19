@@ -49,19 +49,19 @@ class NodeManager {
      *
      **/
 
-    public function random() {
+    public function random($count) {
         $nodes = $this->em->getRepository('Node')->findAll();
 
         /* Populate an array based on votes. */ 
         $nodes_array = array();
         foreach ($nodes as $node) {
             for ($i=0; $i<$node->countVotes(); $i++)
-                $nodes_array[] = $node->getUrl();
+                array_push($nodes_array,$node->getUrl());
         }
 
-        /* Randomly chose X of them. */
-        // TODO
-        return 'http://share.local/';
+        /* Randomly chose $count of them. */
+        shuffle($nodes_array);
+        return array_slice($nodes_array, 0, $count);
     }
 
     /**
@@ -120,6 +120,18 @@ class NodeManager {
      **/
 
     public function removeOldest() {
+        $query = $this->em->createQuery('SELECT
+            n,
+            (SELECT MAX(v.timestamp) FROM Vote v WHERE v.node = n) as last_vote
+            FROM Node n 
+            ORDER BY last_vote ASC'
+        );
+        $nodes = $query->getResult();
+        if ($nodes) {
+            $oldest_node = $nodes[0][0];
+            $this->em->remove($oldest_node);
+            $this->em->flush();
+        }
     }
     
     /**
