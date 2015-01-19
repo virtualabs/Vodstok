@@ -338,3 +338,16 @@ input#download-uri {
 #stats {
     padding: 30px;
 }
+
+/**
+ * Section about
+ */
+
+#pres-about {
+    background-color: #AED581;
+}
+
+#pres-about .about {
+    margin: 20px 0px 100px 0px;
+
+}
