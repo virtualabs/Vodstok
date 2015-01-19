@@ -110,11 +110,11 @@ class ChunkManager {
      * @return Chunk Oldest chunk if found, NULL otherwise.
      **/
 
-    private function getOldest() {
+    public function getOldest() {
         $qb = $this->em->createQueryBuilder();
         $query = $qb->select('c')
                     ->from('Chunk','c')
-                    ->orderBy('c.created', 'DESC')
+                    ->orderBy('c.last_pulled', 'ASC')
                     ->getQuery();
         $chunks = $query->getResult();
         if (count($chunks) > 0) {
