@@ -6,7 +6,7 @@
 class Node {
 
     /**
-     * @Id @Column(type="integer") @Generated
+     * @Id @Column(type="integer") @GeneratedValue
      * @var int
      **/
     protected $id;
@@ -18,7 +18,7 @@ class Node {
     protected $url;
 
     /**
-     * @OneToMany(targetEntity="Vote", mappedBy="node")
+     * @OneToMany(targetEntity="Vote", mappedBy="node", cascade={"remove"})
      **/
     protected $votes = null;
 
@@ -40,5 +40,9 @@ class Node {
 
     public function setUrl($url) {
         $this->url = $url;
+    }
+
+    public function countVotes() {
+        return count($this->votes);
     }
 };
