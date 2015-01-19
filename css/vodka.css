@@ -177,7 +177,7 @@ input#search {
     border-width: 0 0 48px 48px;
     border-color: transparent transparent rgba(27, 18, 18, 0.6) transparent;
     position: fixed;
-    display: none;
+    display: block;
     right: 0px;
     bottom: 0px;
     width: 0;
