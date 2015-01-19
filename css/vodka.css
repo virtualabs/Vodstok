@@ -125,8 +125,6 @@ section {
     box-shadow: 0px 1px 1px rgba(0,0,0,.1);
 }
 
-/* blue */
-
 .button.blue {
     background-color: #4D90FE;
     background-image: -webkit-linear-gradient(top,#4d90fe,#4787ed);
