@@ -79,6 +79,7 @@ var Vodka = function(url) {
 
     this.events = new events();
     this.events.subscribe(this, 'progress', this.onProgress);
+    this.events.subscribe(this, 'node.dl.ok', this.onWorkingNodeFound);
 
     /* If TMService is already instancied, return instance (Singleton) */
     if (arguments.callee.instance) {
@@ -183,6 +184,8 @@ Vodka.prototype.download = function(url) {
                   view[i] = content[1].charCodeAt(i) & 0xff;
             }
             makeDl(content[0], view);
+            console.log('dfd: '+dfd);
+            dfd.resolve();
         }).fail(function(){
             dfd.reject();
         });
@@ -330,7 +333,7 @@ Vodka.prototype.dlChunk = function(chunks, key, last) {
                     inst.events.publish('progress', [inst.progress]);
 
                     /* Notify working node. */
-                    inst.events.publish('node.dl.ok', node);
+                    inst.events.publish('node.dl.ok', [node]);
                 }
                 dfd.resolve();
             };
@@ -338,7 +341,7 @@ Vodka.prototype.dlChunk = function(chunks, key, last) {
         .fail((function(inst, dfd, nodeUrl){
             return function(){
                 dfd.reject();
-                inst.events.publish('node.dl.ko', node);
+                inst.events.publish('node.dl.ko', [node]);
             };
         })(this, dfd_, nodeUrl));
         deferreds.push(dfd_.promise());
@@ -688,6 +691,13 @@ Vodka.prototype.onProgress = function(progress) {
     var progressBarWidth = percent * $('#progressbar').width() / 100;
     $('#progressbar').find('div').css('width',progressBarWidth+'px').html(percent + "%&nbsp;");
 };
+
+Vodka.prototype.onWorkingNodeFound = function(node) {
+    /* Add node if not already present. */
+    if (this.endpoints.indexOf(node) < 0) {
+        this.endpoints.push(node);
+    }
+}
 
 
 /**
