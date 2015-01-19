@@ -38,6 +38,6 @@ class Settings {
 
 }
 
-Settings::setMaxFsSpace(100 * 1024 * 1024);
+Settings::setMaxFsSpace(1000 * 1024 * 1024);
 Settings::setChunksDirectory('chunks/');
 Settings::setMaxNodeSlots(100);
