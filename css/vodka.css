@@ -153,8 +153,31 @@ section {
 }
 
 /**
+ * Header
+ */
+#header {
+    z-index: 999;
+    position: fixed;
+    background-color: rgba(0,0,0,0.2);
+    width: 100%;
+}
+
+#header h1, #header a {
+    color: #fff;
+    display: inline;
+}
+
+/**
  * Download bar
  */
+#download-bar {
+    margin-top: 10px;
+}
+
+#download-bar .form-control, #download-bar .controls {
+    margin: 0;
+}
+
 #download-form .form-group label {
     display: none;
     font-size: 18px;
@@ -169,7 +192,6 @@ section {
 
 #download-form .controls {
     padding: 0;
-    margin-bottom: 30px;
     border: 1px solid #ddd;
     border-radius: 2px;
 }
