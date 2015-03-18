@@ -7,5 +7,14 @@
 # dot files
 .*
 
+# Packages cache
+bower_components/
+node_modules/
+.sass-cache/
+
+# Compiled files
+app/public/*
+!app/public/.gitkeep
+
 # Chunk files
 chunks/*

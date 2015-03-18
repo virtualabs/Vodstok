@@ -1,0 +1,25 @@
+{
+  "name": "vodstok",
+  "version": "1.3.0",
+  "authors": [
+    "virtualabs"
+  ],
+  "description": "Vodstok is an opensource and free and viral project that aims to provide a collaborative distributed storage to users who want to store and share temporarily files on the Internet with other users.",
+  "license": "GPL v2",
+  "homepage": "http://virtualabs.fr/vodstok/",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "materialize": "~0.95.3",
+    "fullpage.js": "~2.6.0"
+  },
+  "resolutions": {
+    "jquery": ">=2.1.1"
+  }
+}
