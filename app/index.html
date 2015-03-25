@@ -136,7 +136,16 @@
                             <a href="https://github.com/virtualabs/Vodstok/releases">Install</a> vodstok on your server and register it to other node. Why not begining with this one :
                         </p>
                         <p>
-                            <input type="text"><button>Add</button>
+                            <div id="register-server-progress" class="progress hidden">
+                                <div class="indeterminate"></div>
+                            </div>
+                            <form id="register-server">
+                                <div class="input-field">
+                                    <input id="server" type="text">
+                                    <label for="server">Endpoint url</label>
+                                </div>
+                                <input type="submit" value="Register"></input>
+                            </form>
                         </p>
                       </div>
                     </div>

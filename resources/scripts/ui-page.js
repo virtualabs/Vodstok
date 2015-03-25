@@ -15,6 +15,13 @@
             if (settings.uploadElement) {
                 $(settings.uploadElement).bigblindUploader();
             }
+
+            if (settings.registerElement) {
+                $(settings.registerElement).bigblindRegisterServer({
+                    'loader': $('#register-server-progress'),
+                    'vodka': settings.vodka
+                });
+            }
         };
 
         var initPages = function() {
