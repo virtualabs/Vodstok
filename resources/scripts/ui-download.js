@@ -30,6 +30,11 @@
             var file = $(this).val();
             if (file) {
                 console.debug('[BigblindDownloader] Downloading "' + file + '" ...');
+                settings.vodka.download(file).done(function() {
+                    console.debug('[BigblindDownloader] Downloading of "' + file + '" successfull.');
+                }).fail(function() {
+                    console.debug('[BigblindDownloader] Downloading of "' + file + '" failed.');
+                });
             }
         }.bind(this);
 

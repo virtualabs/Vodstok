@@ -9,7 +9,9 @@
             initPages();
 
             if (settings.downloadBar) {
-                $(settings.downloadBar).bigblindDownloader();
+                $(settings.downloadBar).bigblindDownloader({
+                    'vodka': settings.vodka
+                });
             }
 
             if (settings.uploadElement) {
