@@ -31,10 +31,12 @@
             if (file) {
                 console.debug('[BigblindDownloader] Downloading "' + file + '" ...');
                 settings.vodka.download(file).done(function() {
+                    $(this).val('');
                     console.debug('[BigblindDownloader] Downloading of "' + file + '" successfull.');
-                }).fail(function() {
+                }.bind(this)).fail(function() {
+                    $(this).val('');
                     console.debug('[BigblindDownloader] Downloading of "' + file + '" failed.');
-                });
+                }.bind(this));
             }
         }.bind(this);
 
