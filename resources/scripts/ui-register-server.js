@@ -14,7 +14,7 @@
                 var endpoint = $(this.server).val();
 
                 if (endpoint) {
-                    console.debug('[bigblindRegisterServer] Try registering : ' + endpoint);
+                    console.debug('[bigblindRegisterServer] Try registering : "' + endpoint + '" ...');
                     settings.vodka.register(endpoint);
 
                     toggleRegisterForm();
@@ -28,11 +28,13 @@
             });
 
             vodka.events.subscribe(this, 'vodka.register.ko', function() {
+                console.debug('[bigblindRegisterServer] Registering failed.');
                 toggleRegisterForm();
                 $(this).reset();
             });
 
             vodka.events.subscribe(this, 'vodka.register.ok', function() {
+                console.debug('[bigblindRegisterServer] Registering successfull.');
                 toggleRegisterForm();
                 $(this).trigger('reset');
             });
