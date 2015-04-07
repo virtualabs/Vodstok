@@ -26,7 +26,7 @@ gulp.task('bower', function() { 
 
 gulp.task('scripts', function() {
   return gulp.src($.mainBowerFiles().concat(config.scriptPath + '/**/*'))
-    .pipe($.filter('*.js'))
+    .pipe($.filter('**/*.js'))
     .pipe($.concat('main.js'))
     .pipe($.uglify())
     .pipe(gulp.dest('app/public/script'));
